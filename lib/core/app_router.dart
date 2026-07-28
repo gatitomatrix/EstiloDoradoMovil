@@ -13,6 +13,8 @@ import '../features/auth/register_screen.dart';
 import '../features/cart/cart_screen.dart';
 import '../features/checkout/checkout_screen.dart';
 import '../features/orders/mis_compras_screen.dart';
+import '../features/orders/views/order_success_screen.dart';
+import '../features/payment/culqi_payment_screen.dart';
 
 // Pantallas Admin
 import '../features/admin/auth/admin_login_screen.dart';
@@ -29,23 +31,22 @@ class AppRouter {
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final isLoggedIn = authProvider.isLoggedIn;
-
       final isAdminRoute = state.matchedLocation.startsWith('/admin');
 
       // Rutas protegidas que requieren login del cliente
       final protectedRoutes = ['/checkout', '/mis-compras'];
 
-      // 1. Si quiere ir a una ruta protegida y NO está logueado → guardamos la ruta y lo mandamos a login
+      // 1. Si quiere ir a una ruta protegida y NO está logueado
       if (protectedRoutes.contains(state.matchedLocation) && !isLoggedIn) {
         authProvider.setNextRouteAfterLogin(state.matchedLocation);
         return '/login';
       }
 
-      // 2. Si acaba de hacer login correctamente y tenemos una ruta guardada → vamos directamente ahí
+      // 2. Si acaba de hacer login correctamente y tenemos una ruta guardada
       if (state.matchedLocation == '/login' && isLoggedIn) {
         final nextRoute = authProvider.nextRouteAfterLogin;
         if (nextRoute != null) {
-          authProvider.clearNextRouteAfterLogin(); // limpiamos para no repetir
+          authProvider.clearNextRouteAfterLogin();
           return nextRoute;
         }
       }
@@ -57,7 +58,6 @@ class AppRouter {
 
       return null; // sin redirección
     },
-
     routes: [
       // ====================== RUTAS CLIENTE ======================
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
@@ -76,6 +76,31 @@ class AppRouter {
       GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
       GoRoute(path: '/checkout', builder: (context, state) => const CheckoutScreen()),
       GoRoute(path: '/mis-compras', builder: (context, state) => const MisComprasScreen()),
+
+      // ====================== RUTA DE ÉXITO ======================
+      GoRoute(
+        path: '/order-success',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return OrderSuccessScreen(
+            metodoPago: extra['metodoPago'] as String? ?? 'yape',
+            total: extra['total'] as double? ?? 0.0,
+            pedidoId: extra['pedidoId'] as int? ?? 0,
+          );
+        },
+      ),
+
+      // ====================== RUTA DE PAGO CULQI ======================
+      GoRoute(
+        path: '/culqi-payment',
+        builder: (context, state) {
+          final extra = state.extra as Map<String, dynamic>? ?? {};
+          return CulqiPaymentScreen(
+            pedidoId: extra['pedidoId'] as int? ?? 0,
+            total: extra['total'] as double? ?? 0.0,
+          );
+        },
+      ),
 
       // ====================== RUTAS ADMIN ======================
       GoRoute(path: '/admin/login', builder: (context, state) => const AdminLoginScreen()),

@@ -1,3 +1,4 @@
+// lib/core/providers/cart_provider.dart
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 
@@ -56,13 +57,18 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
+  void clearCart() {
+    _items.clear();
+    notifyListeners();
+  }
+
   // ==================== CREAR PEDIDO ====================
-  Future<bool> realizarPedido({
+  Future<int?> realizarPedido({
     required String direccion,
     required String metodoPago,
     String? observacion,
   }) async {
-    if (_items.isEmpty) return false;
+    if (_items.isEmpty) return null;
 
     try {
       final data = {
@@ -81,13 +87,22 @@ class CartProvider extends ChangeNotifier {
       final response = await _api.post('/pedidos', data);
 
       if (response.statusCode == 201 || response.statusCode == 200) {
+        final pedidoId = response.data['pedido']['id_pedido'] as int?;
         clear();
-        return true;
+        return pedidoId;
       }
-      return false;
+      return null;
     } catch (e) {
-      debugPrint('Error al crear pedido: $e');
-      return false;
+      debugPrint('========== ERROR AL CREAR PEDIDO ==========');
+      debugPrint('Error: $e');
+      if (e is ApiException) {
+        debugPrint('Status Code: ${e.response?.statusCode}');
+        debugPrint('Mensaje: ${e.message}');
+        debugPrint('Response Data: ${e.response?.data}');
+        debugPrint('Request Path: ${e.requestOptions.path}');
+      }
+      debugPrint('===========================================');
+      return null;
     }
   }
 }
