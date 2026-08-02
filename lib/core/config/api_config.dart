@@ -1,15 +1,30 @@
 // lib/core/config/api_config.dart
 class ApiConfig {
-  static const String baseUrl = 'http://192.168.1.42:8000/api';
+  /// Emulador Android: http://10.0.2.2:8000/api
+  /// iOS simulador:   http://127.0.0.1:8000/api
+  /// Celular físico:  http://IP_DE_TU_PC:8000/api
+  /// Ejemplo: flutter run --dart-define=API_BASE=http://192.168.1.42:8000/api
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE',
+    defaultValue: 'http://10.0.2.2:8000/api',
+  );
 
-  // Auth
+  // Auth cliente
   static const String login = '/auth/login';
   static const String register = '/auth/register';
+  static const String me = '/auth/me';
+  static const String logout = '/auth/logout';
+  static const String updatePassword = '/auth/password';
+  static const String checkEmail = '/auth/check-email';
+  static const String resetSimple = '/auth/password/reset-simple';
 
-  // Productos
+  // Tienda
   static const String productos = '/productos';
+  static const String categorias = '/categorias';
 
-  // Pedidos
+  // Pedidos / checkout (Fase 1 siguiente)
+  static const String confirmarPedido = '/pedidos/confirmar';
+  static const String misPedidos = '/pedidos/mios';
   static const String pedidos = '/pedidos';
-  static const String misPedidos = '/pedidos/mis-pedidos';
+  static const String pagarCulqi = '/pagar-con-culqi';
 }

@@ -10,11 +10,13 @@ import '../features/home/home_screen.dart';
 import '../features/products/product_detail_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
+import '../features/auth/forgot_password_screen.dart';
 import '../features/cart/cart_screen.dart';
 import '../features/checkout/checkout_screen.dart';
 import '../features/orders/mis_compras_screen.dart';
 import '../features/orders/views/order_success_screen.dart';
 import '../features/payment/culqi_payment_screen.dart';
+import '../features/account/mi_cuenta_screen.dart';
 
 // Pantallas Admin
 import '../features/admin/auth/admin_login_screen.dart';
@@ -34,7 +36,7 @@ class AppRouter {
       final isAdminRoute = state.matchedLocation.startsWith('/admin');
 
       // Rutas protegidas que requieren login del cliente
-      final protectedRoutes = ['/checkout', '/mis-compras'];
+      final protectedRoutes = ['/checkout', '/mis-compras', '/mi-cuenta'];
 
       // 1. Si quiere ir a una ruta protegida y NO está logueado
       if (protectedRoutes.contains(state.matchedLocation) && !isLoggedIn) {
@@ -51,8 +53,10 @@ class AppRouter {
         }
       }
 
-      // 3. Admin routes
-      if (isAdminRoute && !isLoggedIn) {
+      // 3. Admin: proteger todo excepto /admin/login
+      if (isAdminRoute &&
+          state.matchedLocation != '/admin/login' &&
+          !isLoggedIn) {
         return '/admin/login';
       }
 
@@ -62,7 +66,11 @@ class AppRouter {
       // ====================== RUTAS CLIENTE ======================
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/registro', builder: (context, state) => const RegisterScreen()),
+      GoRoute(path: '/recuperar', builder: (context, state) => const ForgotPasswordScreen(),
+),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/mi-cuenta', builder: (context, state) => const MiCuentaScreen(),
+),
 
       // Detalle de producto
       GoRoute(

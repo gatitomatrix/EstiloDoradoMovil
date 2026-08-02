@@ -1,6 +1,8 @@
 // lib/core/providers/cart_provider.dart
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'package:dio/dio.dart';
+
 
 class CartItem {
   final int id;
@@ -95,7 +97,7 @@ class CartProvider extends ChangeNotifier {
     } catch (e) {
       debugPrint('========== ERROR AL CREAR PEDIDO ==========');
       debugPrint('Error: $e');
-      if (e is ApiException) {
+      if (e is DioException) {
         debugPrint('Status Code: ${e.response?.statusCode}');
         debugPrint('Mensaje: ${e.message}');
         debugPrint('Response Data: ${e.response?.data}');

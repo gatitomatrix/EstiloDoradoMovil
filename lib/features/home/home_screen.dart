@@ -33,7 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Estilo Dorado', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text(
+          'Estilo Dorado',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
         backgroundColor: const Color(0xFFD4AF37),
         actions: [
           Stack(
@@ -51,7 +54,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     backgroundColor: Colors.red,
                     child: Text(
                       '${cartProvider.items.length}',
-                      style: const TextStyle(fontSize: 12, color: Colors.white, fontWeight: FontWeight.bold),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                 ),
@@ -63,16 +70,19 @@ class _HomeScreenState extends State<HomeScreen> {
       body: RefreshIndicator(
         onRefresh: productProvider.loadProducts,
         child: productProvider.isLoading
-            ? const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37)))
+            ? const Center(
+                child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+              )
             : productProvider.error != null
                 ? Center(child: Text('Error: ${productProvider.error}'))
                 : productProvider.products.isEmpty
                     ? const Center(child: Text('No hay productos disponibles'))
                     : GridView.builder(
                         padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 2,
-                          childAspectRatio: 0.72,     // ← Ajuste final para eliminar los 16 píxeles
+                          childAspectRatio: 0.72,
                           crossAxisSpacing: 16,
                           mainAxisSpacing: 16,
                         ),
@@ -86,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-    Widget _buildProductCard(BuildContext context, Product product) {
+  Widget _buildProductCard(BuildContext context, Product product) {
     return GestureDetector(
       onTap: () => context.push('/producto/${product.id}'),
       child: Card(
@@ -96,7 +106,6 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen (sin cambios)
             AspectRatio(
               aspectRatio: 1.05,
               child: Hero(
@@ -115,11 +124,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
-            // Información (aquí está el fix)
             Flexible(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),   // ← Cambiado
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,13 +135,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       product.nombre,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15,
+                      ),
                     ),
-                    const SizedBox(height: 4),   // ← Reducido
+                    const SizedBox(height: 4),
                     Text(
                       'S/ ${product.precioVenta.toStringAsFixed(2)}',
                       style: const TextStyle(
-                        fontSize: 14,                    // ← Reducido ligeramente
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFD4AF37),
                       ),
@@ -150,6 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildDrawer(BuildContext context, AuthProvider auth) {
+    final isLoggedIn = auth.isLoggedIn;
+
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
@@ -162,32 +174,91 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Spacer(),
                 const Text(
                   'Estilo Dorado',
-                  style: TextStyle(fontSize: 24, color: Colors.white, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: 24,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  auth.user?['nombre'] ?? 'Bienvenido',
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
+                  isLoggedIn
+                      ? (auth.user?['nombre']?.toString() ?? 'Usuario')
+                      : 'Invitado',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                  ),
                 ),
               ],
             ),
           ),
-          ListTile(leading: const Icon(Icons.home), title: const Text('Inicio'), onTap: () { Navigator.pop(context); context.go('/home'); }),
-          ListTile(leading: const Icon(Icons.shopping_cart), title: const Text('Mi Carrito'), onTap: () { Navigator.pop(context); context.push('/cart'); }),
-          ListTile(leading: const Icon(Icons.receipt_long), title: const Text('Mis Compras'), onTap: () { Navigator.pop(context); context.push('/mis-compras'); }),
-          ListTile(leading: const Icon(Icons.person), title: const Text('Mi Cuenta'), onTap: () => Navigator.pop(context)),
-          const Divider(),
-          ListTile(leading: const Icon(Icons.admin_panel_settings), title: const Text('Panel Admin'), onTap: () { Navigator.pop(context); context.push('/admin/login'); }),
-          const Divider(),
           ListTile(
-            leading: const Icon(Icons.logout, color: Colors.red),
-            title: const Text('Cerrar Sesión'),
+            leading: const Icon(Icons.home),
+            title: const Text('Inicio'),
             onTap: () {
               Navigator.pop(context);
-              Provider.of<AuthProvider>(context, listen: false).logout();
-              context.go('/login');
+              context.go('/home');
             },
           ),
+          ListTile(
+            leading: const Icon(Icons.shopping_cart),
+            title: const Text('Mi Carrito'),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/cart');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.receipt_long),
+            title: const Text('Mis Compras'),
+            onTap: () {
+              Navigator.pop(context);
+              if (isLoggedIn) {
+                context.go('/mis-compras');
+              } else {
+                auth.setNextRouteAfterLogin('/mis-compras');
+                context.go('/login');
+              }
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.person),
+            title: Text(isLoggedIn ? 'Mi Cuenta' : 'Iniciar Sesión'),
+            onTap: () {
+              Navigator.pop(context);
+              Future.microtask(() {
+                if (!context.mounted) return;
+                if (isLoggedIn) {
+                  context.go('/mi-cuenta');
+                } else {
+                  auth.setNextRouteAfterLogin('/mi-cuenta');
+                  context.go('/login');
+                }
+              });
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.admin_panel_settings),
+            title: const Text('Panel Admin'),
+            onTap: () {
+              Navigator.pop(context);
+              context.go('/admin/login');
+            },
+          ),
+          if (isLoggedIn) ...[
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Cerrar Sesión'),
+              onTap: () {
+                Navigator.pop(context);
+                auth.logout();
+                context.go('/home');
+              },
+            ),
+          ],
         ],
       ),
     );

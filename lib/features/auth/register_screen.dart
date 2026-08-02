@@ -1,6 +1,6 @@
 // lib/features/auth/register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // ← Necesario para filtrar números
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
@@ -23,6 +23,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirm = true;
   bool _isLoading = false;
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _register() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -44,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       _passwordController.text,
     );
 
+    if (!mounted) return;
     setState(() => _isLoading = false);
 
     if (success) {
@@ -53,7 +63,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      context.go('/login');
+      // Ya queda logueado tras register → ir al home
+      context.go('/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -94,7 +105,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 40),
 
-                // ========== NOMBRE (solo letras y espacios) ==========
+                // Nombre
                 TextFormField(
                   controller: _nameController,
                   decoration: const InputDecoration(
@@ -103,8 +114,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   inputFormatters: [
-                    // Bloquea números y caracteres especiales
-                    FilteringTextInputFormatter.allow(RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]')),
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]'),
+                    ),
                   ],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
@@ -116,10 +128,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
 
-                // ========== CORREO ==========
+                // Correo
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
@@ -138,10 +149,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
 
-                // ========== CONTRASEÑA ==========
+                // Contraseña
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -151,7 +161,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                        _obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() => _obscurePassword = !_obscurePassword);
@@ -168,10 +180,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 16),
 
-                // ========== CONFIRMAR CONTRASEÑA ==========
+                // Confirmar contraseña
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
@@ -181,7 +192,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
                       icon: Icon(
-                        _obscureConfirm ? Icons.visibility_off : Icons.visibility,
+                        _obscureConfirm
+                            ? Icons.visibility_off
+                            : Icons.visibility,
                       ),
                       onPressed: () {
                         setState(() => _obscureConfirm = !_obscureConfirm);
@@ -192,10 +205,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (value == null || value.isEmpty) {
                       return 'Confirme su contraseña';
                     }
+                    if (value != _passwordController.text) {
+                      return 'Las contraseñas no coinciden';
+                    }
                     return null;
                   },
                 ),
-
                 const SizedBox(height: 32),
 
                 SizedBox(
@@ -213,7 +228,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ? const CircularProgressIndicator(color: Colors.white)
                         : const Text(
                             'Crear Cuenta',
-                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                   ),
                 ),

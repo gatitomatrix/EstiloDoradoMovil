@@ -1,29 +1,33 @@
 // lib/core/services/auth_service.dart
-import 'package:dio/dio.dart';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
+import 'api_service.dart';
 
 class AuthService {
-  final Dio _dio = Dio(BaseOptions(baseUrl: ApiConfig.baseUrl));
-  final _storage = const FlutterSecureStorage();
+  final ApiService _api = ApiService();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage();
 
-  Future<Map<String, dynamic>> register(String nombre, String email, String password) async {
+  Future<Map<String, dynamic>> register({
+    required String nombre,
+    required String email,
+    required String password,
+    String? apellido,
+    String? telefono,
+    String? direccion,
+  }) async {
     try {
-      final response = await _dio.post(ApiConfig.register, data: {
+      final response = await _api.post(ApiConfig.register, {
         'nombre': nombre,
+        'apellido': apellido ?? '',
+        'telefono': telefono ?? '',
+        'direccion': direccion ?? '',
         'email': email,
         'password': password,
         'password_confirmation': password,
       });
-
-      final token = response.data['token'] ?? response.data['access_token'];
-      final user = response.data['cliente'] ?? response.data['user'];
-
-      await _storage.write(key: 'auth_token', value: token);
-      await _storage.write(key: 'user', value: user.toString());
-
-      return {'success': true, 'user': user};
+      return await _persistSession(response.data);
     } catch (e) {
       debugPrint('Error en register: $e');
       return {'success': false, 'error': e.toString()};
@@ -32,30 +36,141 @@ class AuthService {
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     try {
-      final response = await _dio.post(ApiConfig.login, data: {
+      final response = await _api.post(ApiConfig.login, {
         'email': email,
         'password': password,
       });
-
-      final token = response.data['token'] ?? response.data['access_token'];
-      final user = response.data['cliente'] ?? response.data['user'];
-
-      await _storage.write(key: 'auth_token', value: token);
-      await _storage.write(key: 'user', value: user.toString());
-
-      return {'success': true, 'user': user};
+      return await _persistSession(response.data);
     } catch (e) {
       debugPrint('Error en login: $e');
       return {'success': false, 'error': e.toString()};
     }
   }
 
-  Future<bool> isLoggedIn() async {
-    final token = await _storage.read(key: 'auth_token');
-    return token != null;
+  Future<Map<String, dynamic>?> me() async {
+    try {
+      final response = await _api.get(ApiConfig.me);
+      final user = Map<String, dynamic>.from(response.data as Map);
+      await _storage.write(key: 'user', value: jsonEncode(user));
+      return user;
+    } catch (e) {
+      debugPrint('Error en me: $e');
+      return null;
+    }
   }
 
-  Future<void> logout() async {
-    await _storage.deleteAll();
+  Future<bool> logout() async {
+    try {
+      await _api.post(ApiConfig.logout, {});
+    } catch (_) {
+      // aunque falle la red, limpiamos local
+    }
+    await _storage.delete(key: 'auth_token');
+    await _storage.delete(key: 'user');
+    return true;
+  }
+
+  Future<bool> isLoggedIn() async {
+    final token = await _storage.read(key: 'auth_token');
+    return token != null && token.isNotEmpty;
+  }
+
+  Future<Map<String, dynamic>?> getStoredUser() async {
+    final raw = await _storage.read(key: 'user');
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return jsonDecode(raw) as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> _persistSession(dynamic data) async {
+    if (data is! Map) {
+      return {'success': false, 'error': 'Respuesta inválida'};
+    }
+
+    final token = data['token']?.toString();
+    final user = data['cliente'] ?? data['user'];
+
+    if (token == null || token.isEmpty) {
+      return {
+        'success': false,
+        'error': data['message']?.toString() ?? 'Sin token',
+      };
+    }
+
+    await _storage.write(key: 'auth_token', value: token);
+    if (user != null) {
+      await _storage.write(key: 'user', value: jsonEncode(user));
+    }
+
+    return {
+      'success': true,
+      'user': user is Map ? Map<String, dynamic>.from(user) : user,
+      'token': token,
+    };
+  }
+
+  Future<Map<String, dynamic>?> updateProfile({
+    required String nombre,
+    String? apellido,
+    String? telefono,
+    String? direccion,
+  }) async {
+    try {
+      final response = await _api.put(ApiConfig.me, {
+        'nombre': nombre,
+        'apellido': apellido ?? '',
+        'telefono': telefono ?? '',
+        'direccion': direccion ?? '',
+      });
+
+      final user = Map<String, dynamic>.from(response.data as Map);
+      await _storage.write(key: 'user', value: jsonEncode(user));
+      return user;
+    } catch (e) {
+      debugPrint('Error en updateProfile: $e');
+      return null;
+    }
+  }
+
+  Future<bool> checkEmail(String email) async {
+    try {
+      final response = await _api.post(ApiConfig.checkEmail, {
+        'email': email.trim(),
+      });
+      // 200 = existe
+      return response.statusCode == 200;
+    } catch (e) {
+      // 404 u otro error = no existe / fallo
+      debugPrint('Error checkEmail: $e');
+      return false;
+    }
+  }
+
+  /// Laravel espera: email + contrasena (no password)
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await _api.post(ApiConfig.resetSimple, {
+        'email': email.trim(),
+        'contrasena': newPassword,
+      });
+
+      return {
+        'success': true,
+        'message': response.data['message']?.toString() ??
+            'Contraseña actualizada',
+      };
+    } catch (e) {
+      debugPrint('Error resetPassword: $e');
+      return {
+        'success': false,
+        'error': e.toString(),
+      };
+    }
   }
 }
