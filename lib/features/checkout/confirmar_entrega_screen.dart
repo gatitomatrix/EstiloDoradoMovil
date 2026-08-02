@@ -17,100 +17,146 @@ class ConfirmarEntregaScreen extends StatelessWidget {
     final checkout = context.watch<CheckoutProvider>();
     final subtotal = cart.subtotal;
 
-    if (checkout.mode == DeliveryMode.none) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) context.go('/entrega');
-      });
-    }
+    // No redirigir en post-frame de forma agresiva (puede pisar otras pantallas).
+    // Si no hay modo, se muestra CTA a Entrega.
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Confirmar entrega')),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.location_on, color: _gold),
-              title: const Text('Dirección'),
-              subtitle: Text(checkout.address?.display ?? '–'),
-              trailing: TextButton(
-                onPressed: () => context.push('/entrega'),
-                child: const Text('Cambiar'),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-          Card(
-            child: Column(
-              children: [
-                RadioListTile<DeliveryMode>(
-                  value: DeliveryMode.storePickup,
-                  groupValue: checkout.mode,
-                  activeColor: _gold,
-                  title: const Text('Retiro en tienda', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text('Recoge en tienda de inmediato y de forma segura.'),
-                  secondary: const Text('S/ 0', style: TextStyle(fontWeight: FontWeight.bold, color: _gold)),
-                  onChanged: (_) => checkout.setMode(DeliveryMode.storePickup),
+      appBar: AppBar(
+        title: const Text('Confirmar entrega'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/entrega'),
+        ),
+      ),
+      body: checkout.mode == DeliveryMode.none
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.local_shipping_outlined, size: 64, color: Colors.grey),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Elige un tipo de entrega para continuar',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(fontSize: 16),
+                    ),
+                    const SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => context.go('/entrega'),
+                      child: const Text('Ir a Entrega'),
+                    ),
+                    TextButton(
+                      onPressed: () => context.go('/cart'),
+                      child: const Text('Volver al carrito'),
+                    ),
+                  ],
                 ),
-                const Divider(height: 1),
-                RadioListTile<DeliveryMode>(
-                  value: DeliveryMode.express,
-                  groupValue: checkout.mode,
-                  activeColor: _gold,
-                  title: const Text('Envío a dirección', style: TextStyle(fontWeight: FontWeight.w700)),
-                  subtitle: const Text(
-                    'Envío a tu dirección de 1 a 2 días según ubicación y horarios de reparto.',
+              ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: [
+                Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.location_on, color: _gold),
+                    title: const Text('Dirección'),
+                    subtitle: Text(checkout.address?.display ?? '–'),
+                    trailing: TextButton(
+                      onPressed: () => context.push('/entrega'),
+                      child: const Text('Cambiar'),
+                    ),
                   ),
-                  secondary: const Text('S/ 20', style: TextStyle(fontWeight: FontWeight.bold, color: _gold)),
-                  onChanged: (_) {
-                    if (checkout.address == null ||
-                        checkout.address!.via == 'Retiro en tienda') {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Primero ingresa una dirección de envío'),
+                ),
+                const SizedBox(height: 12),
+                Card(
+                  child: Column(
+                    children: [
+                      RadioListTile<DeliveryMode>(
+                        value: DeliveryMode.storePickup,
+                        groupValue: checkout.mode,
+                        activeColor: _gold,
+                        title: const Text(
+                          'Retiro en tienda',
+                          style: TextStyle(fontWeight: FontWeight.w700),
                         ),
-                      );
-                      context.push('/entrega');
-                      return;
-                    }
-                    checkout.setMode(DeliveryMode.express);
-                  },
+                        subtitle: const Text(
+                          'Recoge en tienda de inmediato y de forma segura.',
+                        ),
+                        secondary: const Text(
+                          'S/ 0',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                        ),
+                        onChanged: (_) => checkout.setMode(DeliveryMode.storePickup),
+                      ),
+                      const Divider(height: 1),
+                      RadioListTile<DeliveryMode>(
+                        value: DeliveryMode.express,
+                        groupValue: checkout.mode,
+                        activeColor: _gold,
+                        title: const Text(
+                          'Envío a dirección',
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: const Text(
+                          'Envío a tu dirección de 1 a 2 días según ubicación y horarios de reparto.',
+                        ),
+                        secondary: const Text(
+                          'S/ 20',
+                          style: TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                        ),
+                        onChanged: (_) {
+                          if (checkout.address == null ||
+                              checkout.address!.via == 'Retiro en tienda') {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('Primero ingresa una dirección de envío'),
+                              ),
+                            );
+                            context.push('/entrega');
+                            return;
+                          }
+                          checkout.setMode(DeliveryMode.express);
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      children: [
+                        _row('Productos', cart.subtotal),
+                        _row('Descuentos', -checkout.discount, green: true),
+                        _row('Entregas', checkout.fee),
+                        const Divider(),
+                        _row('Total', checkout.totalWith(subtotal), bold: true),
+                        const SizedBox(height: 14),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: checkout.canPay
+                                ? () => context.push('/pago')
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black87,
+                            ),
+                            child: const Text(
+                              'Ir a pagar',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _row('Productos', cart.subtotal),
-                  _row('Descuentos', -checkout.discount, green: true),
-                  _row('Entregas', checkout.fee),
-                  const Divider(),
-                  _row('Total', checkout.totalWith(subtotal), bold: true),
-                  const SizedBox(height: 14),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: checkout.canPay
-                          ? () => context.push('/pago')
-                          : null,
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.black87),
-                      child: const Text(
-                        'Ir a pagar',
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

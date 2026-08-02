@@ -205,8 +205,60 @@ class _EntregaScreenState extends State<EntregaScreen> {
     final total = checkout.totalWith(subtotal);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Entrega')),
-      body: Stack(
+      appBar: AppBar(
+        title: const Text('Entrega'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            if (cart.items.isEmpty) {
+              context.go('/home');
+            } else {
+              context.go('/cart');
+            }
+          },
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.go('/home'),
+            child: const Text('Inicio', style: TextStyle(color: Colors.black87)),
+          ),
+        ],
+      ),
+      body: cart.items.isEmpty
+          ? Center(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.shopping_cart_outlined, size: 72, color: Colors.grey),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Tu carrito está vacío',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Si acabas de pagar, revisa Mis compras o el detalle del pedido.',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[700]),
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
+                      onPressed: () => context.go('/mis-compras'),
+                      style: ElevatedButton.styleFrom(backgroundColor: _gold),
+                      child: const Text('Ir a Mis compras'),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: () => context.go('/home'),
+                      child: const Text('Seguir comprando'),
+                    ),
+                  ],
+                ),
+              ),
+            )
+          : Stack(
         children: [
           ListView(
             padding: const EdgeInsets.all(16),

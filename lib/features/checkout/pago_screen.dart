@@ -23,6 +23,8 @@ class _PagoScreenState extends State<PagoScreen> {
   final _order = OrderService();
   final _ubigeo = UbigeoService();
   bool _submitting = false;
+  /// Evita que el auto-redirect a /entrega pise la pantalla de éxito.
+  bool _leavingToSuccess = false;
 
   // Yape form (UI; Culqi real requiere SDK nativo)
   final _yapePhone = TextEditingController(text: '+51 9');
@@ -129,9 +131,9 @@ class _PagoScreenState extends State<PagoScreen> {
         items: _itemsFromCart(cart),
       );
       final total = checkout.totalWith(cart.subtotal);
-      cart.clear();
-      checkout.reset();
       if (!mounted) return;
+      setState(() => _leavingToSuccess = true);
+      // Navegar ANTES de reset: si se resetea en Pago, !canPay redirige a /entrega
       context.go(
         '/order-success',
         extra: {
@@ -140,6 +142,8 @@ class _PagoScreenState extends State<PagoScreen> {
           'metodoPago': 'efectivo',
         },
       );
+      cart.clear();
+      checkout.reset();
     } catch (e) {
       _toast('No se pudo registrar: ${OrderService.errorMessage(e)}');
       debugPrint('$e');
@@ -203,12 +207,8 @@ class _PagoScreenState extends State<PagoScreen> {
         boleta: tipo == 'BO' ? pay.boleta : null,
       );
 
-      cart.clear();
-      checkout.reset();
-      pay.clearAll();
       if (!mounted) return;
-
-      // Pantalla de compra exitosa → PDF / detalle
+      setState(() => _leavingToSuccess = true);
       context.go(
         '/order-success',
         extra: {
@@ -221,6 +221,9 @@ class _PagoScreenState extends State<PagoScreen> {
           'sunatCdr': res.sunatCdr,
         },
       );
+      cart.clear();
+      checkout.reset();
+      pay.clearAll();
     } catch (e) {
       final msg = OrderService.errorMessage(e);
       _toast('No se pudo confirmar: $msg');
@@ -485,9 +488,12 @@ class _PagoScreenState extends State<PagoScreen> {
     final subtotal = cart.subtotal;
     final total = checkout.totalWith(subtotal);
 
-    if (!checkout.canPay) {
+    if (!checkout.canPay && !_submitting && !_leavingToSuccess) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (context.mounted) context.go('/entrega');
+        if (!mounted || _submitting || _leavingToSuccess) return;
+        if (!context.read<CheckoutProvider>().canPay) {
+          context.go('/entrega');
+        }
       });
     }
 
