@@ -1,6 +1,5 @@
 // lib/features/checkout/pago_screen.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/checkout_models.dart';
@@ -10,6 +9,7 @@ import '../../core/providers/checkout_provider.dart';
 import '../../core/providers/payment_provider.dart';
 import '../../core/services/order_service.dart';
 import '../../core/services/ubigeo_service.dart';
+import '../../core/utils/input_formatters.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -294,10 +294,7 @@ class _PagoScreenState extends State<PagoScreen> {
                       TextField(
                         controller: _bolDni,
                         keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(8),
-                        ],
+                        inputFormatters: digitsMax(8),
                         decoration: const InputDecoration(
                           labelText: 'DNI',
                           border: OutlineInputBorder(),
@@ -333,10 +330,7 @@ class _PagoScreenState extends State<PagoScreen> {
                       TextField(
                         controller: _facRuc,
                         keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(11),
-                        ],
+                        inputFormatters: digitsMax(11),
                         decoration: const InputDecoration(
                           labelText: 'RUC',
                           border: OutlineInputBorder(),
@@ -509,6 +503,33 @@ class _PagoScreenState extends State<PagoScreen> {
             ),
           ),
           const SizedBox(height: 12),
+          // Info alineada con Angular
+          _infoBanner(
+            icon: Icons.shield_outlined,
+            title: 'Pagos con Culqi',
+            body:
+                'Contamos con la pasarela Culqi para una experiencia segura. '
+                'En la app el cobro se simula (modo prueba) y el pedido se confirma en el servidor. '
+                'Tarjetas de prueba abajo en el método Tarjeta.',
+          ),
+          if (checkout.mode == DeliveryMode.express)
+            _infoBanner(
+              icon: Icons.local_shipping_outlined,
+              title: 'Envío Express',
+              body:
+                  'Tu pedido llegará en un plazo de 1 a 2 días a tu dirección. '
+                  'En envío express el pago es con Yape o tarjeta (Culqi).',
+            ),
+          if (checkout.canCash)
+            _infoBanner(
+              icon: Icons.payments_outlined,
+              title: '¿Efectivo (retiro en tienda)?',
+              body:
+                  'Si eliges retiro en tienda puedes pagar en efectivo al recoger. '
+                  'No se emiten comprobantes electrónicos (PDF/XML/CDR) en esta modalidad; '
+                  'si lo necesitas, solicítalo en tienda.',
+            ),
+          const SizedBox(height: 8),
           const Text('Método de pago', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           _methodTile(
@@ -520,36 +541,28 @@ class _PagoScreenState extends State<PagoScreen> {
                     children: [
                       TextField(
                         controller: _yapePhone,
-                        keyboardType: TextInputType.phone,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [yapePhoneFormatter],
                         decoration: const InputDecoration(
                           labelText: 'Celular Yape',
                           border: OutlineInputBorder(),
                           hintText: '+51 9xxxxxxxx',
                         ),
-                        onChanged: (v) {
-                          final digits = v.replaceAll(RegExp(r'[^\d]'), '');
-                          final body = digits.replaceFirst(RegExp(r'^519?'), '');
-                          final next = '+51 9${body.length > 8 ? body.substring(0, 8) : body}';
-                          if (next != v) {
-                            _yapePhone.value = TextEditingValue(
-                              text: next,
-                              selection: TextSelection.collapsed(offset: next.length),
-                            );
-                          }
-                        },
                       ),
                       const SizedBox(height: 8),
                       TextField(
                         controller: _yapeCode,
                         keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                          LengthLimitingTextInputFormatter(6),
-                        ],
+                        inputFormatters: digitsMax(6),
                         decoration: const InputDecoration(
                           labelText: 'Código de aprobación (6 dígitos)',
                           border: OutlineInputBorder(),
                         ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Modo prueba: usa cualquier código de 6 dígitos (ej. 123456).',
+                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                       ),
                     ],
                   )
@@ -561,30 +574,17 @@ class _PagoScreenState extends State<PagoScreen> {
             icon: Icons.credit_card,
             child: _method == 'tarjeta'
                 ? Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       TextField(
                         controller: _cardNumber,
                         keyboardType: TextInputType.number,
+                        inputFormatters: [cardNumberFormatter],
                         decoration: const InputDecoration(
                           labelText: 'Número de tarjeta',
                           border: OutlineInputBorder(),
+                          hintText: '4111 1111 1111 1111',
                         ),
-                        onChanged: (v) {
-                          var d = v.replaceAll(RegExp(r'\D'), '');
-                          if (d.length > 16) d = d.substring(0, 16);
-                          final buf = StringBuffer();
-                          for (var i = 0; i < d.length; i++) {
-                            if (i > 0 && i % 4 == 0) buf.write(' ');
-                            buf.write(d[i]);
-                          }
-                          final next = buf.toString();
-                          if (next != v) {
-                            _cardNumber.value = TextEditingValue(
-                              text: next,
-                              selection: TextSelection.collapsed(offset: next.length),
-                            );
-                          }
-                        },
                       ),
                       const SizedBox(height: 8),
                       Row(
@@ -593,24 +593,12 @@ class _PagoScreenState extends State<PagoScreen> {
                             child: TextField(
                               controller: _cardExp,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [cardExpiryFormatter],
                               decoration: const InputDecoration(
                                 labelText: 'MM/AA',
                                 border: OutlineInputBorder(),
+                                hintText: '12/28',
                               ),
-                              onChanged: (v) {
-                                var d = v.replaceAll(RegExp(r'\D'), '');
-                                if (d.length > 4) d = d.substring(0, 4);
-                                var next = d;
-                                if (d.length >= 3) {
-                                  next = '${d.substring(0, 2)}/${d.substring(2)}';
-                                }
-                                if (next != v) {
-                                  _cardExp.value = TextEditingValue(
-                                    text: next,
-                                    selection: TextSelection.collapsed(offset: next.length),
-                                  );
-                                }
-                              },
                             ),
                           ),
                           const SizedBox(width: 10),
@@ -619,17 +607,34 @@ class _PagoScreenState extends State<PagoScreen> {
                               controller: _cardCvv,
                               keyboardType: TextInputType.number,
                               obscureText: true,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(3),
-                              ],
+                              inputFormatters: digitsMax(3),
                               decoration: const InputDecoration(
                                 labelText: 'CVV',
                                 border: OutlineInputBorder(),
+                                hintText: '123',
                               ),
                             ),
                           ),
                         ],
+                      ),
+                      const SizedBox(height: 10),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: Colors.blue.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: Colors.blue.shade100),
+                        ),
+                        child: Text(
+                          'Tarjetas de prueba Culqi (sandbox):\n'
+                          '• Visa OK: 4111 1111 1111 1111\n'
+                          '• Mastercard OK: 5111 1111 1111 1118\n'
+                          '• CVV: 123  ·  Exp: cualquier mes/año futuro (ej. 12/28)\n'
+                          '• Rechazada: 4000 0000 0000 0002\n'
+                          'En esta app el cobro es simulado; no se cobra dinero real.',
+                          style: TextStyle(fontSize: 12, color: Colors.blue.shade900, height: 1.35),
+                        ),
                       ),
                     ],
                   )
@@ -769,6 +774,51 @@ class _PagoScreenState extends State<PagoScreen> {
               child: child,
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _infoBanner({
+    required IconData icon,
+    required String title,
+    required String body,
+  }) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      color: const Color(0xFF2B2B2B),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, color: _gold, size: 28),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    body,
+                    style: TextStyle(
+                      color: Colors.grey[300],
+                      fontSize: 13,
+                      height: 1.35,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

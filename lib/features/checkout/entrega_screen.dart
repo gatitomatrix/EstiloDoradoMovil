@@ -1,7 +1,9 @@
 // lib/features/checkout/entrega_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
@@ -281,6 +283,77 @@ class _EntregaScreenState extends State<EntregaScreen> {
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
+                              if (_lat != null && _lng != null) ...[
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: AspectRatio(
+                                    aspectRatio: 16 / 9,
+                                    child: Stack(
+                                      fit: StackFit.expand,
+                                      children: [
+                                        Image.network(
+                                          'https://staticmap.openstreetmap.de/staticmap.php'
+                                          '?center=${_lat!.toStringAsFixed(5)},${_lng!.toStringAsFixed(5)}'
+                                          '&zoom=16&size=640x360&maptype=mapnik'
+                                          '&markers=${_lat!.toStringAsFixed(5)},${_lng!.toStringAsFixed(5)},lightblue1',
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            color: Colors.grey[200],
+                                            alignment: Alignment.center,
+                                            child: const Column(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(Icons.map, size: 48, color: Colors.grey),
+                                                SizedBox(height: 8),
+                                                Text('Mapa no disponible sin red'),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        Positioned(
+                                          right: 8,
+                                          bottom: 8,
+                                          child: Material(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(20),
+                                            elevation: 2,
+                                            child: InkWell(
+                                              borderRadius: BorderRadius.circular(20),
+                                              onTap: () async {
+                                                final uri = Uri.parse(
+                                                  'https://www.google.com/maps/search/?api=1&query=${_lat},${_lng}',
+                                                );
+                                                await launchUrl(
+                                                  uri,
+                                                  mode: LaunchMode.externalApplication,
+                                                );
+                                              },
+                                              child: const Padding(
+                                                padding: EdgeInsets.symmetric(
+                                                  horizontal: 12,
+                                                  vertical: 8,
+                                                ),
+                                                child: Row(
+                                                  mainAxisSize: MainAxisSize.min,
+                                                  children: [
+                                                    Icon(Icons.open_in_new, size: 16, color: _gold),
+                                                    SizedBox(width: 6),
+                                                    Text(
+                                                      'Google Maps',
+                                                      style: TextStyle(fontWeight: FontWeight.w600),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                              ],
                               Container(
                                 width: double.infinity,
                                 padding: const EdgeInsets.all(12),
@@ -289,7 +362,8 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Text(
-                                  'Ubicación aproximada obtenida. Puedes editar los datos si es necesario.',
+                                  'Ubicación aproximada obtenida por geocodificación. '
+                                  'Confirma o edita los datos de la dirección.',
                                 ),
                               ),
                               const SizedBox(height: 12),
@@ -344,6 +418,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                               const SizedBox(height: 10),
                               TextField(
                                 controller: _viaCtrl,
+                                textCapitalization: TextCapitalization.words,
                                 decoration: const InputDecoration(
                                   labelText: 'Avenida / Calle / Jirón',
                                   border: OutlineInputBorder(),
@@ -352,9 +427,18 @@ class _EntregaScreenState extends State<EntregaScreen> {
                               const SizedBox(height: 10),
                               TextField(
                                 controller: _numCtrl,
+                                keyboardType: TextInputType.text,
+                                inputFormatters: [
+                                  // Número de puerta puede ser "123-A"; permite dígitos y guión/letras cortas
+                                  FilteringTextInputFormatter.allow(
+                                    RegExp(r'[0-9A-Za-z\-/]'),
+                                  ),
+                                  LengthLimitingTextInputFormatter(12),
+                                ],
                                 decoration: const InputDecoration(
                                   labelText: 'Número',
                                   border: OutlineInputBorder(),
+                                  hintText: 'Ej. 123 o 123-A',
                                 ),
                               ),
                             ],

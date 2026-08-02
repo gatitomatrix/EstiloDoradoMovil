@@ -1,11 +1,11 @@
 // lib/features/orders/pagar_pedido_screen.dart
 // Completa el pago de un pedido ya creado y pendiente (yape/tarjeta + boleta/factura).
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/services/order_service.dart';
 import '../../core/services/ubigeo_service.dart';
+import '../../core/utils/input_formatters.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -222,6 +222,20 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2B2B2B),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'Pago simulado (modo prueba). No se cobra dinero real. '
+              'Visa OK: 4111 1111 1111 1111 · CVV 123 · Exp 12/28',
+              style: TextStyle(color: Colors.grey[200], fontSize: 13, height: 1.35),
+            ),
+          ),
           const SizedBox(height: 16),
           const Text('Método de pago', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           RadioListTile<String>(
@@ -234,7 +248,8 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
           if (_method == 'yape') ...[
             TextField(
               controller: _yapePhone,
-              keyboardType: TextInputType.phone,
+              keyboardType: TextInputType.number,
+              inputFormatters: [yapePhoneFormatter],
               decoration: const InputDecoration(
                 labelText: 'Celular Yape',
                 border: OutlineInputBorder(),
@@ -245,10 +260,7 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
             TextField(
               controller: _yapeCode,
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(6),
-              ],
+              inputFormatters: digitsMax(6),
               decoration: const InputDecoration(
                 labelText: 'Código de aprobación (6 dígitos)',
                 border: OutlineInputBorder(),
@@ -266,9 +278,11 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
             TextField(
               controller: _cardNumber,
               keyboardType: TextInputType.number,
+              inputFormatters: [cardNumberFormatter],
               decoration: const InputDecoration(
                 labelText: 'Número de tarjeta',
                 border: OutlineInputBorder(),
+                hintText: '4111 1111 1111 1111',
               ),
             ),
             const SizedBox(height: 8),
@@ -278,9 +292,11 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
                   child: TextField(
                     controller: _cardExp,
                     keyboardType: TextInputType.number,
+                    inputFormatters: [cardExpiryFormatter],
                     decoration: const InputDecoration(
                       labelText: 'MM/AA',
                       border: OutlineInputBorder(),
+                      hintText: '12/28',
                     ),
                   ),
                 ),
@@ -290,13 +306,11 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
                     controller: _cardCvv,
                     keyboardType: TextInputType.number,
                     obscureText: true,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(3),
-                    ],
+                    inputFormatters: digitsMax(3),
                     decoration: const InputDecoration(
                       labelText: 'CVV',
                       border: OutlineInputBorder(),
+                      hintText: '123',
                     ),
                   ),
                 ),
@@ -317,6 +331,7 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
           if (_docTipo == 'BO') ...[
             TextField(
               controller: _bolNombres,
+              textCapitalization: TextCapitalization.words,
               decoration: const InputDecoration(
                 labelText: 'Nombres y apellidos',
                 border: OutlineInputBorder(),
@@ -326,10 +341,7 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
             TextField(
               controller: _bolDni,
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(8),
-              ],
+              inputFormatters: digitsMax(8),
               decoration: const InputDecoration(labelText: 'DNI', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 8),
@@ -341,15 +353,13 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
             TextField(
               controller: _facRuc,
               keyboardType: TextInputType.number,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(11),
-              ],
+              inputFormatters: digitsMax(11),
               decoration: const InputDecoration(labelText: 'RUC', border: OutlineInputBorder()),
             ),
             const SizedBox(height: 8),
             TextField(
               controller: _facRazon,
+              textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(
                 labelText: 'Razón social',
                 border: OutlineInputBorder(),
