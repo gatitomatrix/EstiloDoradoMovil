@@ -19,6 +19,7 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
   List<PedidoListItem> _data = [];
   bool _loading = true;
   String? _error;
+  int? _cancellingId;
 
   final _filtroId = TextEditingController();
   String _rango = '1y'; // 1y | 3m | last
@@ -83,6 +84,49 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
     return DateFormat('dd/MM/yyyy HH:mm').format(d);
   }
 
+  Future<void> _cancelar(PedidoListItem p) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar pedido'),
+        content: Text('¿Cancelar el pedido #${p.idPedido}?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
+            child: const Text('Sí, cancelar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _cancellingId = p.idPedido);
+    try {
+      await _order.cancelar(p.idPedido, motivo: 'Cancelado por el cliente');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Pedido #${p.idPedido} cancelado'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      await _cargar();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo cancelar: $e'),
+          backgroundColor: Colors.red.shade800,
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _cancellingId = null);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final list = _filtered;
@@ -108,7 +152,8 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
-              'El estado del pedido cambiará según el proceso de compra y el tiempo de entrega o recojo en tienda.',
+              'El estado del pedido cambiará según el proceso de compra y el tiempo de entrega o recojo en tienda. '
+              'Los pedidos pendientes se pueden cancelar.',
               style: TextStyle(fontSize: 13),
             ),
           ),
@@ -177,6 +222,8 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                 itemCount: list.length,
                                 itemBuilder: (context, index) {
                                   final p = list[index];
+                                  final pendiente = p.estado.toLowerCase() == 'pendiente';
+                                  final cancelling = _cancellingId == p.idPedido;
                                   return Card(
                                     margin: const EdgeInsets.only(bottom: 10),
                                     shape: RoundedRectangleBorder(
@@ -227,11 +274,24 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                                   ),
                                                 ),
                                                 const Spacer(),
-                                                OutlinedButton(
+                                                if (pendiente)
+                                                  TextButton(
+                                                    onPressed: cancelling ? null : () => _cancelar(p),
+                                                    child: cancelling
+                                                        ? const SizedBox(
+                                                            width: 16,
+                                                            height: 16,
+                                                            child: CircularProgressIndicator(strokeWidth: 2),
+                                                          )
+                                                        : Text(
+                                                            'Cancelar',
+                                                            style: TextStyle(color: Colors.red.shade700),
+                                                          ),
+                                                  ),
+                                                FilledButton.tonal(
                                                   onPressed: () =>
                                                       context.push('/resumen/${p.idPedido}'),
-                                                  child: const Text('Resumen'
-                                                  ),
+                                                  child: const Text('Ver detalle'),
                                                 ),
                                               ],
                                             ),

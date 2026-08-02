@@ -16,6 +16,64 @@ class ProductDetailScreen extends StatefulWidget {
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final productProvider = context.read<ProductProvider>();
+      final cart = context.read<CartProvider>();
+      final product = productProvider.products
+          .cast<Product?>()
+          .firstWhere((p) => p?.id == widget.productId, orElse: () => null);
+      if (product != null) {
+        cart.syncStockMax(product.id, product.stock);
+      }
+    });
+  }
+
+  void _addToCart(Product product, CartProvider cartProvider) {
+    final result = cartProvider.addItem(
+      CartItem(
+        id: product.id,
+        nombre: product.nombre,
+        precio: product.precioVenta,
+        imagenUrl: product.imagenUrl ?? '',
+        stockMax: product.stock > 0 ? product.stock : 0,
+        cantidad: 1,
+      ),
+    );
+
+    String msg;
+    Color bg;
+    switch (result) {
+      case CartAddResult.added:
+        msg = '${product.nombre} agregado al carrito';
+        bg = const Color(0xFFD4AF37);
+        break;
+      case CartAddResult.increased:
+        msg = 'Cantidad actualizada (máx. ${product.stock})';
+        bg = const Color(0xFFD4AF37);
+        break;
+      case CartAddResult.atLimit:
+        msg = 'Solo hay ${product.stock} unidades disponibles';
+        bg = Colors.orange.shade800;
+        break;
+      case CartAddResult.outOfStock:
+        msg = 'Producto agotado';
+        bg = Colors.red.shade700;
+        break;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: bg,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     final productProvider = Provider.of<ProductProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
@@ -24,7 +82,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         .cast<Product?>()
         .firstWhere((p) => p?.id == widget.productId, orElse: () => null);
 
-    // Producto no encontrado
     if (product == null) {
       return Scaffold(
         appBar: AppBar(
@@ -44,6 +101,10 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       );
     }
 
+    final inCart = cartProvider.items.where((i) => i.id == product.id);
+    final qtyInCart = inCart.isEmpty ? 0 : inCart.first.cantidad;
+    final canAdd = product.stock > 0 && qtyInCart < product.stock;
+
     return Scaffold(
       appBar: AppBar(
         title: Text(product.nombre, style: const TextStyle(color: Colors.white)),
@@ -54,7 +115,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Imagen principal con Hero
             Hero(
               tag: 'product-${product.id}',
               child: CachedNetworkImage(
@@ -74,20 +134,16 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                 ),
               ),
             ),
-
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Nombre
                   Text(
                     product.nombre,
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
-
-                  // Precio
                   Text(
                     'S/ ${product.precioVenta.toStringAsFixed(2)}',
                     style: const TextStyle(
@@ -97,8 +153,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // Stock Badge
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                     decoration: BoxDecoration(
@@ -106,8 +160,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      product.stock > 0 
-                          ? 'En stock (${product.stock} disponibles)' 
+                      product.stock > 0
+                          ? 'En stock (${product.stock} disponibles)'
                           : 'Agotado',
                       style: TextStyle(
                         color: product.stock > 0 ? Colors.green[800] : Colors.red[800],
@@ -115,55 +169,43 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
-
+                  if (qtyInCart > 0) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      'En tu carrito: $qtyInCart / ${product.stock}',
+                      style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500),
+                    ),
+                  ],
                   const SizedBox(height: 28),
-
-                  // Descripción
                   const Text(
                     'Descripción',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    product.descripcion ?? 'No hay descripción disponible para este producto.',
+                    product.descripcion ??
+                        'No hay descripción disponible para este producto.',
                     style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
                   ),
-
                   const SizedBox(height: 40),
-
-                  // Botón Agregar al Carrito
                   SizedBox(
                     width: double.infinity,
                     height: 56,
                     child: ElevatedButton(
-                      onPressed: product.stock > 0
-                          ? () {
-                              cartProvider.addItem(
-                                CartItem(
-                                  id: product.id,
-                                  nombre: product.nombre,
-                                  precio: product.precioVenta,
-                                  imagenUrl: product.imagenUrl ?? '',
-                                  stockMax: product.stock > 0 ? product.stock : 1,
-                                ),
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text('${product.nombre} agregado al carrito'),
-                                  backgroundColor: const Color(0xFFD4AF37),
-                                  behavior: SnackBarBehavior.floating,
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                              );
-                            }
-                          : null,
+                      onPressed: canAdd ? () => _addToCart(product, cartProvider) : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD4AF37),
                         disabledBackgroundColor: Colors.grey[300],
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
                       ),
                       child: Text(
-                        product.stock > 0 ? 'Agregar al carrito' : 'Producto agotado',
+                        product.stock <= 0
+                            ? 'Producto agotado'
+                            : qtyInCart >= product.stock
+                                ? 'Stock máximo en carrito'
+                                : 'Agregar al carrito',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),

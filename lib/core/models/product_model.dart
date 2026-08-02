@@ -20,13 +20,17 @@ class Product {
 
   factory Product.fromJson(Map<String, dynamic> json) {
     return Product(
-      id: json['id_producto'] ?? json['id'] ?? 0,
-      nombre: json['nombre'] ?? 'Sin nombre',
-      descripcion: json['descripcion'],
-      precioVenta: double.tryParse(json['precio_venta']?.toString() ?? '0') ?? 0.0,
-      stock: json['stock'] ?? 0,
-      imagenUrl: json['imagen_url'],
-      estado: json['estado'],
+      id: int.tryParse(
+            (json['id_producto'] ?? json['id'])?.toString() ?? '0',
+          ) ??
+          0,
+      nombre: json['nombre']?.toString() ?? 'Sin nombre',
+      descripcion: json['descripcion']?.toString(),
+      precioVenta:
+          double.tryParse(json['precio_venta']?.toString() ?? '0') ?? 0.0,
+      stock: int.tryParse(json['stock']?.toString() ?? '0') ?? 0,
+      imagenUrl: (json['imagen_url'] ?? json['imagenUrl'])?.toString(),
+      estado: json['estado']?.toString(),
     );
   }
 }

@@ -5,11 +5,28 @@ import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
+import '../../core/providers/product_provider.dart';
 
 const _gold = Color(0xFFD4AF37);
 
-class CartScreen extends StatelessWidget {
+class CartScreen extends StatefulWidget {
   const CartScreen({super.key});
+
+  @override
+  State<CartScreen> createState() => _CartScreenState();
+}
+
+class _CartScreenState extends State<CartScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final products = context.read<ProductProvider>().products;
+      if (products.isEmpty) return;
+      final map = {for (final p in products) p.id: p.stock};
+      context.read<CartProvider>().syncStocks(map);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +76,7 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildCartItem(BuildContext context, CartItem item, CartProvider cartProvider) {
+    final atMax = item.cantidad >= item.stockMax;
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: 2,
@@ -96,9 +114,14 @@ class CartScreen extends StatelessWidget {
                   Text(item.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                   const SizedBox(height: 4),
                   Text(
-                    'S/ ${item.precio.toStringAsFixed(2)}  ·  máx ${item.stockMax}',
+                    'S/ ${item.precio.toStringAsFixed(2)}  ·  stock ${item.stockMax}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
+                  if (atMax)
+                    Text(
+                      'Máximo disponible',
+                      style: TextStyle(color: Colors.orange[800], fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
                   const SizedBox(height: 4),
                   Text(
                     'S/ ${(item.precio * item.cantidad).toStringAsFixed(2)}',
@@ -119,10 +142,31 @@ class CartScreen extends StatelessWidget {
                 ),
                 Text('${item.cantidad}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
-                  icon: const Icon(Icons.add_circle_outline),
-                  onPressed: item.cantidad >= item.stockMax
-                      ? null
-                      : () => cartProvider.updateQuantity(item.id, item.cantidad + 1),
+                  icon: Icon(
+                    Icons.add_circle_outline,
+                    color: atMax ? Colors.grey : null,
+                  ),
+                  onPressed: atMax
+                      ? () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Solo hay ${item.stockMax} unidades de ${item.nombre}'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: Colors.orange.shade800,
+                            ),
+                          );
+                        }
+                      : () {
+                          final ok = cartProvider.updateQuantity(item.id, item.cantidad + 1);
+                          if (!ok && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Stock máximo: ${item.stockMax}'),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
                 ),
               ],
             ),

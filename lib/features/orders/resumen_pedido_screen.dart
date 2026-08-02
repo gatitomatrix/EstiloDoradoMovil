@@ -28,6 +28,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   ConfirmarRes? _data;
   String? _error;
   bool _loading = true;
+  bool _cancelling = false;
 
   @override
   void initState() {
@@ -53,7 +54,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudo cargar el pedido.';
+        _error = 'No se pudo cargar el pedido #${widget.pedidoId}.\n$e';
         _loading = false;
       });
     }
@@ -107,6 +108,60 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     }
   }
 
+  Future<void> _cancelar() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Cancelar pedido'),
+        content: Text(
+          '¿Seguro que deseas cancelar el pedido #${widget.pedidoId}? '
+          'Solo se puede cancelar si aún no está pagado.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
+            child: const Text('Sí, cancelar'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final res = await _order.cancelar(widget.pedidoId, motivo: 'Cancelado por el cliente');
+      if (!mounted) return;
+      setState(() {
+        _data = res;
+        _cancelling = false;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pedido cancelado'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _cancelling = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('No se pudo cancelar: $e'),
+          backgroundColor: Colors.red.shade800,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  bool get _canCancel {
+    final e = (_data?.estado ?? '').toLowerCase();
+    return e == 'pendiente';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,18 +171,30 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           icon: const Icon(Icons.arrow_back),
           onPressed: () => context.go('/mis-compras'),
         ),
+        actions: [
+          IconButton(icon: const Icon(Icons.refresh), onPressed: _load),
+        ],
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator(color: _gold))
           : _error != null
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(_error!),
-                      const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _load, child: const Text('Reintentar')),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 56, color: Colors.red),
+                        const SizedBox(height: 12),
+                        Text(_error!, textAlign: TextAlign.center),
+                        const SizedBox(height: 12),
+                        ElevatedButton(onPressed: _load, child: const Text('Reintentar')),
+                        TextButton(
+                          onPressed: () => context.go('/mis-compras'),
+                          child: const Text('Volver a Mis compras'),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : _buildBody(),
@@ -137,9 +204,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   Widget _buildBody() {
     final d = _data!;
     final comp = d.comprobante ?? widget.comprobanteExtra;
-    final isCash = d.formaPago == 'efectivo' ||
-        comp == null ||
-        (comp.tipo != 'FA' && comp.tipo != 'BO');
+    final isCash = d.formaPago.toLowerCase() == 'efectivo';
+    final hasElectronic = comp != null && (comp.tipo == 'FA' || comp.tipo == 'BO');
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -173,7 +239,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 ),
                 const SizedBox(height: 8),
                 _info('Fecha', d.fechaPedido ?? '—'),
-                _info('Pago', d.formaPago),
+                _info('Pago', d.formaPago.isEmpty ? '—' : d.formaPago),
                 _info('Entrega', d.direccionEntrega ?? '—'),
               ],
             ),
@@ -186,12 +252,12 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Detalle', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text('Detalle de productos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
               if (d.detalles == null || d.detalles!.isEmpty)
                 const Padding(
                   padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Text('Sin detalle de productos'),
+                  child: Text('Sin líneas de producto en este pedido.'),
                 )
               else
                 ...d.detalles!.asMap().entries.map((e) {
@@ -202,7 +268,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                       backgroundColor: _gold.withValues(alpha: 0.15),
                       child: Text('${i + 1}', style: const TextStyle(color: _gold)),
                     ),
-                    title: Text(det.producto ?? '#${det.idProducto}'),
+                    title: Text(det.producto ?? 'Producto #${det.idProducto}'),
                     subtitle: Text(
                       '${det.cantidad} × S/ ${det.precioUnitario.toStringAsFixed(2)}',
                     ),
@@ -216,7 +282,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (!isCash && comp != null)
+        if (hasElectronic)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -224,7 +290,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    comp.tipo == 'FA' ? 'FACTURA ELECTRÓNICA' : 'BOLETA ELECTRÓNICA',
+                    comp!.tipo == 'FA' ? 'FACTURA ELECTRÓNICA' : 'BOLETA ELECTRÓNICA',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(comp.friendly, style: TextStyle(color: Colors.grey[700])),
@@ -254,15 +320,50 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
               ),
             ),
           )
-        else
+        else if (isCash)
           Card(
             color: Colors.amber.shade50,
             child: const ListTile(
               leading: Icon(Icons.info_outline, color: Colors.orange),
               title: Text('Pago en efectivo (retiro en tienda)'),
-              subtitle: Text('No se generó comprobante electrónico para este pedido.'),
+              subtitle: Text(
+                'El pedido queda pendiente de pago en tienda. Puedes cancelarlo mientras esté pendiente.',
+              ),
+            ),
+          )
+        else if (d.estado.toLowerCase() == 'pendiente')
+          Card(
+            color: Colors.orange.shade50,
+            child: const ListTile(
+              leading: Icon(Icons.pending_actions, color: Colors.orange),
+              title: Text('Pedido pendiente de pago'),
+              subtitle: Text('Aún no se registró un pago confirmado.'),
             ),
           ),
+        if (_canCancel) ...[
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: OutlinedButton.icon(
+              onPressed: _cancelling ? null : _cancelar,
+              icon: _cancelling
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.cancel_outlined, color: Colors.red),
+              label: Text(
+                _cancelling ? 'Cancelando…' : 'Cancelar pedido',
+                style: const TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
+              ),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Colors.red),
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,

@@ -35,7 +35,11 @@ class OrderService {
 
   Future<ConfirmarRes> getById(int id) async {
     final res = await _api.get('${ApiConfig.pedidoById}/$id');
-    return ConfirmarRes.fromJson(Map<String, dynamic>.from(res.data as Map));
+    final data = res.data;
+    if (data is Map && data['pedido'] is Map) {
+      return ConfirmarRes.fromJson(Map<String, dynamic>.from(data['pedido'] as Map));
+    }
+    return ConfirmarRes.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
   /// GET /pedidos — lista enriquecida (producto_label, friendly…)
@@ -53,6 +57,18 @@ class OrderService {
       debugPrint('listMine error: $e');
       rethrow;
     }
+  }
+
+  /// POST /pedidos/{id}/cancelar — solo si estado = pendiente
+  Future<ConfirmarRes> cancelar(int id, {String? motivo}) async {
+    final res = await _api.post('${ApiConfig.pedidoById}/$id/cancelar', {
+      if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
+    });
+    final data = res.data;
+    if (data is Map && data['pedido'] is Map) {
+      return ConfirmarRes.fromJson(Map<String, dynamic>.from(data['pedido'] as Map));
+    }
+    return ConfirmarRes.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
   /// Cobra con Culqi vía backend (token de tarjeta)
