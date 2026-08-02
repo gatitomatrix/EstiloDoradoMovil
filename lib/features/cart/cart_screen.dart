@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
+
+const _gold = Color(0xFFD4AF37);
 
 class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
@@ -14,12 +17,9 @@ class CartScreen extends StatelessWidget {
     final items = cartProvider.items;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Mi Carrito'),
-        backgroundColor: const Color(0xFFD4AF37),
-      ),
+      appBar: AppBar(title: const Text('Carrito')),
       body: items.isEmpty
-          ? _buildEmptyState()
+          ? _buildEmptyState(context)
           : Column(
               children: [
                 Expanded(
@@ -32,23 +32,27 @@ class CartScreen extends StatelessWidget {
                     },
                   ),
                 ),
-
-                // Resumen y botón de pago
                 _buildBottomSummary(context, cartProvider),
               ],
             ),
     );
   }
 
-  Widget _buildEmptyState() {
-    return const Center(
+  Widget _buildEmptyState(BuildContext context) {
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('Tu carrito está vacío', style: TextStyle(fontSize: 20)),
-          Text('Agrega productos desde la tienda', style: TextStyle(color: Colors.grey)),
+          const Icon(Icons.shopping_cart_outlined, size: 100, color: Colors.grey),
+          const SizedBox(height: 16),
+          const Text('Tu carrito está vacío', style: TextStyle(fontSize: 20)),
+          const SizedBox(height: 8),
+          const Text('Agrega productos desde la tienda', style: TextStyle(color: Colors.grey)),
+          const SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: () => context.go('/home'),
+            child: const Text('Seguir comprando'),
+          ),
         ],
       ),
     );
@@ -63,7 +67,6 @@ class CartScreen extends StatelessWidget {
         padding: const EdgeInsets.all(8),
         child: Row(
           children: [
-            // Imagen
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: CachedNetworkImage(
@@ -86,8 +89,6 @@ class CartScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-
-            // Información
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -95,8 +96,8 @@ class CartScreen extends StatelessWidget {
                   Text(item.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                   const SizedBox(height: 4),
                   Text(
-                    'S/ ${item.precio.toStringAsFixed(2)} x ${item.cantidad}',
-                    style: TextStyle(color: Colors.grey[600]),
+                    'S/ ${item.precio.toStringAsFixed(2)}  ·  máx ${item.stockMax}',
+                    style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -104,14 +105,12 @@ class CartScreen extends StatelessWidget {
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
-                      color: Color(0xFFD4AF37),
+                      color: _gold,
                     ),
                   ),
                 ],
               ),
             ),
-
-            // Controles de cantidad
             Column(
               children: [
                 IconButton(
@@ -121,12 +120,12 @@ class CartScreen extends StatelessWidget {
                 Text('${item.cantidad}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
                   icon: const Icon(Icons.add_circle_outline),
-                  onPressed: () => cartProvider.updateQuantity(item.id, item.cantidad + 1),
+                  onPressed: item.cantidad >= item.stockMax
+                      ? null
+                      : () => cartProvider.updateQuantity(item.id, item.cantidad + 1),
                 ),
               ],
             ),
-
-            // Eliminar
             IconButton(
               icon: const Icon(Icons.delete_outline, color: Colors.red),
               onPressed: () => cartProvider.removeItem(item.id),
@@ -138,6 +137,7 @@ class CartScreen extends StatelessWidget {
   }
 
   Widget _buildBottomSummary(BuildContext context, CartProvider cartProvider) {
+    final auth = context.read<AuthProvider>();
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: const BoxDecoration(
@@ -149,25 +149,54 @@ class CartScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Total a pagar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               Text(
-                'S/ ${cartProvider.total.toStringAsFixed(2)}',
-                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFD4AF37)),
+                'Productos (${cartProvider.itemCount})',
+                style: const TextStyle(fontSize: 16),
+              ),
+              Text(
+                'S/ ${cartProvider.subtotal.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 8),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('Total', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(
+                'S/ ${cartProvider.total.toStringAsFixed(2)}',
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: _gold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
           SizedBox(
             width: double.infinity,
             height: 56,
             child: ElevatedButton(
-              onPressed: () => context.push('/checkout'),
+              onPressed: () {
+                if (!auth.isLoggedIn) {
+                  auth.setNextRouteAfterLogin('/entrega');
+                  context.push('/login');
+                  return;
+                }
+                context.push('/entrega');
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFD4AF37),
+                backgroundColor: _gold,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
-              child: const Text('Continuar con la compra', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: const Text(
+                'Continuar compra',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
             ),
+          ),
+          const SizedBox(height: 8),
+          TextButton(
+            onPressed: () => context.go('/home'),
+            child: const Text('Seguir comprando'),
           ),
         ],
       ),

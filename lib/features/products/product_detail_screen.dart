@@ -144,6 +144,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                                   nombre: product.nombre,
                                   precio: product.precioVenta,
                                   imagenUrl: product.imagenUrl ?? '',
+                                  stockMax: product.stock > 0 ? product.stock : 1,
                                 ),
                               );
                               ScaffoldMessenger.of(context).showSnackBar(

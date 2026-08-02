@@ -2,23 +2,26 @@
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-// Providers
 import '../core/providers/auth_provider.dart';
+import '../core/models/checkout_models.dart';
 
-// Pantallas Cliente
+// Cliente
 import '../features/home/home_screen.dart';
 import '../features/products/product_detail_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/forgot_password_screen.dart';
 import '../features/cart/cart_screen.dart';
-import '../features/checkout/checkout_screen.dart';
+import '../features/checkout/entrega_screen.dart';
+import '../features/checkout/confirmar_entrega_screen.dart';
+import '../features/checkout/pago_screen.dart';
 import '../features/orders/mis_compras_screen.dart';
+import '../features/orders/resumen_pedido_screen.dart';
 import '../features/orders/views/order_success_screen.dart';
 import '../features/payment/culqi_payment_screen.dart';
 import '../features/account/mi_cuenta_screen.dart';
 
-// Pantallas Admin
+// Admin
 import '../features/admin/auth/admin_login_screen.dart';
 import '../features/admin/dashboard/admin_dashboard_screen.dart';
 import '../features/admin/productos/admin_productos_screen.dart';
@@ -34,18 +37,25 @@ class AppRouter {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final isLoggedIn = authProvider.isLoggedIn;
       final isAdminRoute = state.matchedLocation.startsWith('/admin');
+      final loc = state.matchedLocation;
 
-      // Rutas protegidas que requieren login del cliente
-      final protectedRoutes = ['/checkout', '/mis-compras', '/mi-cuenta'];
+      final protectedRoutes = [
+        '/entrega',
+        '/confirmar-entrega',
+        '/pago',
+        '/mis-compras',
+        '/mi-cuenta',
+      ];
 
-      // 1. Si quiere ir a una ruta protegida y NO está logueado
-      if (protectedRoutes.contains(state.matchedLocation) && !isLoggedIn) {
-        authProvider.setNextRouteAfterLogin(state.matchedLocation);
+      final needsAuth = protectedRoutes.contains(loc) ||
+          loc.startsWith('/resumen/');
+
+      if (needsAuth && !isLoggedIn) {
+        authProvider.setNextRouteAfterLogin(state.uri.toString());
         return '/login';
       }
 
-      // 2. Si acaba de hacer login correctamente y tenemos una ruta guardada
-      if (state.matchedLocation == '/login' && isLoggedIn) {
+      if (loc == '/login' && isLoggedIn) {
         final nextRoute = authProvider.nextRouteAfterLogin;
         if (nextRoute != null) {
           authProvider.clearNextRouteAfterLogin();
@@ -53,26 +63,20 @@ class AppRouter {
         }
       }
 
-      // 3. Admin: proteger todo excepto /admin/login
       if (isAdminRoute &&
           state.matchedLocation != '/admin/login' &&
           !isLoggedIn) {
         return '/admin/login';
       }
 
-      return null; // sin redirección
+      return null;
     },
     routes: [
-      // ====================== RUTAS CLIENTE ======================
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/registro', builder: (context, state) => const RegisterScreen()),
-      GoRoute(path: '/recuperar', builder: (context, state) => const ForgotPasswordScreen(),
-),
+      GoRoute(path: '/recuperar', builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
-      GoRoute(path: '/mi-cuenta', builder: (context, state) => const MiCuentaScreen(),
-),
-
-      // Detalle de producto
+      GoRoute(path: '/mi-cuenta', builder: (context, state) => const MiCuentaScreen()),
       GoRoute(
         path: '/producto/:id',
         builder: (context, state) {
@@ -80,12 +84,41 @@ class AppRouter {
           return ProductDetailScreen(productId: productId);
         },
       ),
-
       GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
-      GoRoute(path: '/checkout', builder: (context, state) => const CheckoutScreen()),
+
+      // Fase 1 — flujo compra (alineado con Angular)
+      GoRoute(path: '/entrega', builder: (context, state) => const EntregaScreen()),
+      GoRoute(
+        path: '/confirmar-entrega',
+        builder: (context, state) => const ConfirmarEntregaScreen(),
+      ),
+      GoRoute(path: '/pago', builder: (context, state) => const PagoScreen()),
+      GoRoute(
+        path: '/resumen/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : <String, dynamic>{};
+          ComprobanteOut? comp;
+          if (extra['comprobante'] is ComprobanteOut) {
+            comp = extra['comprobante'] as ComprobanteOut;
+          }
+          return ResumenPedidoScreen(
+            pedidoId: id,
+            ventaOk: extra['ventaOk'] == true,
+            comprobanteExtra: comp,
+          );
+        },
+      ),
+
       GoRoute(path: '/mis-compras', builder: (context, state) => const MisComprasScreen()),
 
-      // ====================== RUTA DE ÉXITO ======================
+      // Compat rutas antiguas
+      GoRoute(
+        path: '/checkout',
+        redirect: (context, state) => '/entrega',
+      ),
       GoRoute(
         path: '/order-success',
         builder: (context, state) {
@@ -97,8 +130,6 @@ class AppRouter {
           );
         },
       ),
-
-      // ====================== RUTA DE PAGO CULQI ======================
       GoRoute(
         path: '/culqi-payment',
         builder: (context, state) {
@@ -110,7 +141,7 @@ class AppRouter {
         },
       ),
 
-      // ====================== RUTAS ADMIN ======================
+      // Admin
       GoRoute(path: '/admin/login', builder: (context, state) => const AdminLoginScreen()),
       GoRoute(path: '/admin/dashboard', builder: (context, state) => const AdminDashboardScreen()),
       GoRoute(path: '/admin/productos', builder: (context, state) => const AdminProductosScreen()),
@@ -119,7 +150,6 @@ class AppRouter {
       GoRoute(path: '/admin/inventario', builder: (context, state) => const AdminInventarioScreen()),
       GoRoute(path: '/admin/reportes', builder: (context, state) => const AdminReportesScreen()),
 
-      // Ruta por defecto
       GoRoute(path: '/', redirect: (context, state) => '/home'),
     ],
   );
