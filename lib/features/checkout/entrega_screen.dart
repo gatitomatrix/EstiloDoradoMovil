@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
