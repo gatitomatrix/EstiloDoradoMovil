@@ -97,14 +97,19 @@ class ApiService {
   Future<Response> post(
     String path, [
     dynamic data,
-    Duration? receiveTimeout,
   ]) =>
+      _dio.post(path, data: data);
+
+  /// POST con timeout de recepción personalizado (p. ej. confirmar + SUNAT).
+  Future<Response> postWithTimeout(
+    String path, {
+    dynamic data,
+    Duration receiveTimeout = const Duration(seconds: 90),
+  }) =>
       _dio.post(
         path,
         data: data,
-        options: receiveTimeout != null
-            ? Options(receiveTimeout: receiveTimeout)
-            : null,
+        options: Options(receiveTimeout: receiveTimeout),
       );
 
   Future<Response> put(String path, [dynamic data]) =>

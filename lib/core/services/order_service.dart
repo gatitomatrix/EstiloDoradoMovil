@@ -56,9 +56,9 @@ class OrderService {
     }
 
     // SUNAT puede tardar; timeout más alto solo en confirmar
-    final res = await _api.post(
+    final res = await _api.postWithTimeout(
       ApiConfig.confirmarPedido,
-      body,
+      data: body,
       receiveTimeout: const Duration(seconds: 90),
     );
     final data = res.data;
@@ -131,9 +131,9 @@ class OrderService {
     if (factura != null) body['factura'] = factura.toJson();
     if (boleta != null) body['boleta'] = boleta.toJson();
 
-    final res = await _api.post(
+    final res = await _api.postWithTimeout(
       '${ApiConfig.pedidoById}/$id/pagar',
-      body,
+      data: body,
       receiveTimeout: const Duration(seconds: 90),
     );
     final data = res.data;
