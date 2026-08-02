@@ -9,6 +9,7 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
+import '../../core/widgets/address_map_preview.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -284,74 +285,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               if (_lat != null && _lng != null) ...[
-                                ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: AspectRatio(
-                                    aspectRatio: 16 / 9,
-                                    child: Stack(
-                                      fit: StackFit.expand,
-                                      children: [
-                                        Image.network(
-                                          'https://staticmap.openstreetmap.de/staticmap.php'
-                                          '?center=${_lat!.toStringAsFixed(5)},${_lng!.toStringAsFixed(5)}'
-                                          '&zoom=16&size=640x360&maptype=mapnik'
-                                          '&markers=${_lat!.toStringAsFixed(5)},${_lng!.toStringAsFixed(5)},lightblue1',
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) => Container(
-                                            color: Colors.grey[200],
-                                            alignment: Alignment.center,
-                                            child: const Column(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Icon(Icons.map, size: 48, color: Colors.grey),
-                                                SizedBox(height: 8),
-                                                Text('Mapa no disponible sin red'),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        Positioned(
-                                          right: 8,
-                                          bottom: 8,
-                                          child: Material(
-                                            color: Colors.white,
-                                            borderRadius: BorderRadius.circular(20),
-                                            elevation: 2,
-                                            child: InkWell(
-                                              borderRadius: BorderRadius.circular(20),
-                                              onTap: () async {
-                                                final uri = Uri.parse(
-                                                  'https://www.google.com/maps/search/?api=1&query=${_lat},${_lng}',
-                                                );
-                                                await launchUrl(
-                                                  uri,
-                                                  mode: LaunchMode.externalApplication,
-                                                );
-                                              },
-                                              child: const Padding(
-                                                padding: EdgeInsets.symmetric(
-                                                  horizontal: 12,
-                                                  vertical: 8,
-                                                ),
-                                                child: Row(
-                                                  mainAxisSize: MainAxisSize.min,
-                                                  children: [
-                                                    Icon(Icons.open_in_new, size: 16, color: _gold),
-                                                    SizedBox(width: 6),
-                                                    Text(
-                                                      'Google Maps',
-                                                      style: TextStyle(fontWeight: FontWeight.w600),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
+                                AddressMapPreview(lat: _lat!, lng: _lng!),
                                 const SizedBox(height: 12),
                               ],
                               Container(
@@ -363,7 +297,8 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                 ),
                                 child: const Text(
                                   'Ubicación aproximada obtenida por geocodificación. '
-                                  'Confirma o edita los datos de la dirección.',
+                                  'Confirma o edita los datos de la dirección. '
+                                  'Si el mapa no carga el tile, usa el botón Google Maps (ya te funciona).',
                                 ),
                               ),
                               const SizedBox(height: 12),
