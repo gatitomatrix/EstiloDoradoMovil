@@ -190,8 +190,16 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
 
       if (!mounted) return;
       context.go(
-        '/resumen/${res.idPedido}',
-        extra: {'ventaOk': true, 'comprobante': res.comprobante},
+        '/order-success',
+        extra: {
+          'pedidoId': res.idPedido,
+          'total': res.total > 0 ? res.total : widget.total,
+          'metodoPago': _method,
+          'comprobante': res.comprobante,
+          'sunatPdf': res.sunatPdf,
+          'sunatXml': res.sunatXml,
+          'sunatCdr': res.sunatCdr,
+        },
       );
     } catch (e) {
       _toast('No se pudo pagar: ${OrderService.errorMessage(e)}');

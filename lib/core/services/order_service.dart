@@ -16,6 +16,17 @@ class OrderService {
       if (data is Map) {
         final m = data['message'] ?? data['error'];
         if (m != null) return m.toString();
+        // Validación Laravel
+        final errors = data['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final first = errors.values.first;
+          if (first is List && first.isNotEmpty) return first.first.toString();
+          return first.toString();
+        }
+      }
+      if (e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.connectionTimeout) {
+        return 'El servidor tardó demasiado (emisión SUNAT). Revisa Mis compras: el pedido pudo crearse.';
       }
       return e.message ?? 'Error de red';
     }
@@ -44,8 +55,28 @@ class OrderService {
       if (boleta != null) body['boleta'] = boleta.toJson();
     }
 
-    final res = await _api.post(ApiConfig.confirmarPedido, body);
-    return ConfirmarRes.fromJson(Map<String, dynamic>.from(res.data as Map));
+    // SUNAT puede tardar; timeout más alto solo en confirmar
+    final res = await _api.post(
+      ApiConfig.confirmarPedido,
+      body,
+      receiveTimeout: const Duration(seconds: 90),
+    );
+    final data = res.data;
+    if (data is! Map) {
+      throw ApiException(message: 'Respuesta inválida del servidor al confirmar');
+    }
+    final map = Map<String, dynamic>.from(data);
+    // Algunos wrappers devuelven { pedido: {...} }
+    if (map['pedido'] is Map) {
+      return ConfirmarRes.fromJson(Map<String, dynamic>.from(map['pedido'] as Map));
+    }
+    final parsed = ConfirmarRes.fromJson(map);
+    if (parsed.idPedido <= 0) {
+      throw ApiException(
+        message: map['message']?.toString() ?? 'No se obtuvo el id del pedido',
+      );
+    }
+    return parsed;
   }
 
   Future<ConfirmarRes> getById(int id) async {
@@ -57,7 +88,6 @@ class OrderService {
     return ConfirmarRes.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  /// GET /pedidos — lista enriquecida (producto_label, friendly…)
   Future<List<PedidoListItem>> listMine() async {
     try {
       final res = await _api.get(ApiConfig.misPedidos);
@@ -74,7 +104,6 @@ class OrderService {
     }
   }
 
-  /// POST /pedidos/{id}/cancelar — solo si estado = pendiente
   Future<ConfirmarRes> cancelar(int id, {String? motivo}) async {
     final res = await _api.post('${ApiConfig.pedidoById}/$id/cancelar', {
       if (motivo != null && motivo.isNotEmpty) 'motivo': motivo,
@@ -86,7 +115,6 @@ class OrderService {
     return ConfirmarRes.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  /// POST /pedidos/{id}/pagar — completa pago de pedido pendiente (yape/tarjeta)
   Future<ConfirmarRes> pagarPendiente({
     required int id,
     required String formaPago,
@@ -103,7 +131,11 @@ class OrderService {
     if (factura != null) body['factura'] = factura.toJson();
     if (boleta != null) body['boleta'] = boleta.toJson();
 
-    final res = await _api.post('${ApiConfig.pedidoById}/$id/pagar', body);
+    final res = await _api.post(
+      '${ApiConfig.pedidoById}/$id/pagar',
+      body,
+      receiveTimeout: const Duration(seconds: 90),
+    );
     final data = res.data;
     if (data is Map && data['pedido'] is Map) {
       return ConfirmarRes.fromJson(Map<String, dynamic>.from(data['pedido'] as Map));

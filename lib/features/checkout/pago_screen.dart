@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/checkout_models.dart';
-import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/providers/payment_provider.dart';
@@ -111,6 +110,7 @@ class _PagoScreenState extends State<PagoScreen> {
       .toList();
 
   Future<void> _pagarEfectivo() async {
+    if (_submitting) return;
     final checkout = context.read<CheckoutProvider>();
     final cart = context.read<CartProvider>();
     if (!checkout.canCash) {
@@ -128,12 +128,20 @@ class _PagoScreenState extends State<PagoScreen> {
         direccionEntrega: checkout.direccionEntrega,
         items: _itemsFromCart(cart),
       );
+      final total = checkout.totalWith(cart.subtotal);
       cart.clear();
       checkout.reset();
       if (!mounted) return;
-      context.go('/resumen/${res.idPedido}', extra: {'ventaOk': true});
+      context.go(
+        '/order-success',
+        extra: {
+          'pedidoId': res.idPedido,
+          'total': total,
+          'metodoPago': 'efectivo',
+        },
+      );
     } catch (e) {
-      _toast('No se pudo registrar tu pedido en efectivo.');
+      _toast('No se pudo registrar: ${OrderService.errorMessage(e)}');
       debugPrint('$e');
     } finally {
       if (mounted) setState(() => _submitting = false);
@@ -141,10 +149,10 @@ class _PagoScreenState extends State<PagoScreen> {
   }
 
   Future<void> _pagarCulqiLike(String method) async {
+    if (_submitting) return;
     final checkout = context.read<CheckoutProvider>();
     final cart = context.read<CartProvider>();
     final pay = context.read<PaymentProvider>();
-    final auth = context.read<AuthProvider>();
 
     if (cart.items.isEmpty) {
       _toast('Tu carrito está vacío.');
@@ -178,10 +186,9 @@ class _PagoScreenState extends State<PagoScreen> {
     }
 
     final tipo = pay.selectedDoc ?? (pay.invoice != null ? 'FA' : 'BO');
+    final totalSnapshot = checkout.totalWith(cart.subtotal);
     setState(() => _submitting = true);
     try {
-      // En móvil, sin Culqi SDK nativo usamos un id de prueba trazable.
-      // Cuando integres Culqi nativo, reemplaza por el token/order real.
       final culqiId = method == 'yape'
           ? 'ype_mobile_${DateTime.now().millisecondsSinceEpoch}'
           : 'tok_mobile_${DateTime.now().millisecondsSinceEpoch}';
@@ -200,16 +207,23 @@ class _PagoScreenState extends State<PagoScreen> {
       checkout.reset();
       pay.clearAll();
       if (!mounted) return;
+
+      // Pantalla de compra exitosa → PDF / detalle
       context.go(
-        '/resumen/${res.idPedido}',
+        '/order-success',
         extra: {
-          'ventaOk': true,
+          'pedidoId': res.idPedido,
+          'total': res.total > 0 ? res.total : totalSnapshot,
+          'metodoPago': method,
           'comprobante': res.comprobante,
-          'email': auth.user?['email'],
+          'sunatPdf': res.sunatPdf,
+          'sunatXml': res.sunatXml,
+          'sunatCdr': res.sunatCdr,
         },
       );
     } catch (e) {
-      _toast('No se pudo confirmar el pedido. Revisa datos o conexión al API.');
+      final msg = OrderService.errorMessage(e);
+      _toast('No se pudo confirmar: $msg');
       debugPrint('confirmar error: $e');
     } finally {
       if (mounted) setState(() => _submitting = false);

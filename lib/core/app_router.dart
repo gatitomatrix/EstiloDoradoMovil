@@ -137,11 +137,21 @@ class AppRouter {
       GoRoute(
         path: '/order-success',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : <String, dynamic>{};
+          ComprobanteOut? comp;
+          if (extra['comprobante'] is ComprobanteOut) {
+            comp = extra['comprobante'] as ComprobanteOut;
+          }
           return OrderSuccessScreen(
-            metodoPago: extra['metodoPago'] as String? ?? 'yape',
-            total: extra['total'] as double? ?? 0.0,
+            metodoPago: extra['metodoPago']?.toString() ?? 'yape',
+            total: (extra['total'] as num?)?.toDouble() ?? 0.0,
             pedidoId: extra['pedidoId'] as int? ?? 0,
+            comprobante: comp,
+            sunatPdf: extra['sunatPdf']?.toString(),
+            sunatXml: extra['sunatXml']?.toString(),
+            sunatCdr: extra['sunatCdr']?.toString(),
           );
         },
       ),

@@ -94,14 +94,21 @@ class ApiService {
   }) =>
       _dio.get(path, queryParameters: queryParameters);
 
-  Future<Response> post(String path, [dynamic data]) =>
-      _dio.post(path, data: data);
+  Future<Response> post(
+    String path, [
+    dynamic data,
+    Duration? receiveTimeout,
+  ]) =>
+      _dio.post(
+        path,
+        data: data,
+        options: receiveTimeout != null
+            ? Options(receiveTimeout: receiveTimeout)
+            : null,
+      );
 
   Future<Response> put(String path, [dynamic data]) =>
       _dio.put(path, data: data);
-
-  Future<Response> patch(String path, [dynamic data]) =>
-      _dio.patch(path, data: data);
 
   Future<Response> delete(String path) => _dio.delete(path);
 }
