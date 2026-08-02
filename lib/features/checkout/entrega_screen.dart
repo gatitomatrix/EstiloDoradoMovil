@@ -9,6 +9,7 @@ import '../../core/providers/checkout_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
 import '../../core/widgets/address_map_preview.dart';
+import 'interactive_map_screen.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -95,6 +96,50 @@ class _EntregaScreenState extends State<EntregaScreen> {
       final d = await _ubigeo.getDistritos(_dep!, v);
       if (mounted) setState(() => _dists = d);
     }
+  }
+
+  Future<void> _openInteractiveMap() async {
+    if (_lat == null || _lng == null) return;
+    final q = [
+      _viaCtrl.text.trim(),
+      _numCtrl.text.trim(),
+      _dist,
+      _prov,
+      _dep,
+    ].where((e) => e != null && e.toString().isNotEmpty).join(', ');
+
+    final result = await Navigator.of(context).push<InteractiveMapResult>(
+      MaterialPageRoute(
+        builder: (_) => InteractiveMapScreen(
+          initialLat: _lat!,
+          initialLng: _lng!,
+          initialQuery: q,
+        ),
+      ),
+    );
+    if (result == null || !mounted) return;
+
+    setState(() {
+      _lat = result.lat;
+      _lng = result.lng;
+    });
+
+    // Intentar rellenar vía/número desde reverse
+    final rev = await _geo.reverseAddress(result.lat, result.lng);
+    if (!mounted) return;
+    if (rev != null) {
+      setState(() {
+        if ((rev['via'] ?? '').isNotEmpty) _viaCtrl.text = rev['via']!;
+        if ((rev['numero'] ?? '').isNotEmpty) _numCtrl.text = rev['numero']!;
+      });
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Ubicación actualizada en el mapa'),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _continuarDireccion() async {
@@ -285,6 +330,23 @@ class _EntregaScreenState extends State<EntregaScreen> {
                             children: [
                               if (_lat != null && _lng != null) ...[
                                 AddressMapPreview(lat: _lat!, lng: _lng!),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 48,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _openInteractiveMap,
+                                    icon: const Icon(Icons.explore),
+                                    label: const Text(
+                                      'Mover / buscar en el mapa',
+                                      style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: Colors.black87,
+                                      side: const BorderSide(color: _gold, width: 1.5),
+                                    ),
+                                  ),
+                                ),
                                 const SizedBox(height: 12),
                               ],
                               Container(
@@ -295,9 +357,9 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: const Text(
-                                  'Ubicación aproximada obtenida por geocodificación. '
-                                  'Confirma o edita los datos de la dirección. '
-                                  'Si el mapa no carga el tile, usa el botón Google Maps (ya te funciona).',
+                                  'Ubicación aproximada por geocodificación. '
+                                  'Pulsa «Mover / buscar en el mapa» para navegar, hacer zoom '
+                                  'y tocar el punto exacto, o busca por texto (calle, avenida…).',
                                 ),
                               ),
                               const SizedBox(height: 12),
