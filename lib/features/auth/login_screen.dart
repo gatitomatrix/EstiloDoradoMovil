@@ -38,10 +38,11 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (success) {
       final nextRoute = authProvider.nextRouteAfterLogin;
-      if (nextRoute != null) {
+      if (nextRoute != null && !nextRoute.startsWith('/admin')) {
         authProvider.clearNextRouteAfterLogin();
         context.go(nextRoute);
       } else {
+        authProvider.clearNextRouteAfterLogin();
         context.go('/home');
       }
     } else {

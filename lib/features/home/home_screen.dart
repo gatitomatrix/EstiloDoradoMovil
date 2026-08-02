@@ -238,15 +238,6 @@ class _HomeScreenState extends State<HomeScreen> {
               });
             },
           ),
-          const Divider(),
-          ListTile(
-            leading: const Icon(Icons.admin_panel_settings),
-            title: const Text('Panel Admin'),
-            onTap: () {
-              Navigator.pop(context);
-              context.go('/admin/login');
-            },
-          ),
           if (isLoggedIn) ...[
             const Divider(),
             ListTile(

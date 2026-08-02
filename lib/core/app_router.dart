@@ -1,4 +1,5 @@
 // lib/core/app_router.dart
+// App móvil = cliente (tienda). El panel admin vive en la web (Angular), según alcance del proyecto.
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -22,23 +23,18 @@ import '../features/orders/views/order_success_screen.dart';
 import '../features/payment/culqi_payment_screen.dart';
 import '../features/account/mi_cuenta_screen.dart';
 
-// Admin
-import '../features/admin/auth/admin_login_screen.dart';
-import '../features/admin/dashboard/admin_dashboard_screen.dart';
-import '../features/admin/productos/admin_productos_screen.dart';
-import '../features/admin/pedidos/admin_pedidos_screen.dart';
-import '../features/admin/clientes/admin_clientes_screen.dart';
-import '../features/admin/inventario/admin_inventario_screen.dart';
-import '../features/admin/reportes/admin_reportes_screen.dart';
-
 class AppRouter {
   static final GoRouter router = GoRouter(
     initialLocation: '/home',
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final isLoggedIn = authProvider.isLoggedIn;
-      final isAdminRoute = state.matchedLocation.startsWith('/admin');
       final loc = state.matchedLocation;
+
+      // Admin no forma parte de la app móvil (alcance: panel web)
+      if (loc.startsWith('/admin')) {
+        return '/home';
+      }
 
       final protectedRoutes = [
         '/entrega',
@@ -46,11 +42,13 @@ class AppRouter {
         '/pago',
         '/mis-compras',
         '/mi-cuenta',
+        '/order-success',
       ];
 
       final needsAuth = protectedRoutes.contains(loc) ||
           loc.startsWith('/resumen/') ||
-          loc.startsWith('/pagar-pedido/');
+          loc.startsWith('/pagar-pedido/') ||
+          loc.startsWith('/culqi-payment');
 
       if (needsAuth && !isLoggedIn) {
         authProvider.setNextRouteAfterLogin(state.uri.toString());
@@ -61,14 +59,12 @@ class AppRouter {
         final nextRoute = authProvider.nextRouteAfterLogin;
         if (nextRoute != null) {
           authProvider.clearNextRouteAfterLogin();
+          // No redirigir a admin si quedó en memoria de sesiones viejas
+          if (nextRoute.startsWith('/admin')) {
+            return '/home';
+          }
           return nextRoute;
         }
-      }
-
-      if (isAdminRoute &&
-          state.matchedLocation != '/admin/login' &&
-          !isLoggedIn) {
-        return '/admin/login';
       }
 
       return null;
@@ -88,7 +84,7 @@ class AppRouter {
       ),
       GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
 
-      // Fase 1 — flujo compra
+      // Flujo de compra (cliente)
       GoRoute(path: '/entrega', builder: (context, state) => const EntregaScreen()),
       GoRoute(
         path: '/confirmar-entrega',
@@ -127,9 +123,7 @@ class AppRouter {
           );
         },
       ),
-
       GoRoute(path: '/mis-compras', builder: (context, state) => const MisComprasScreen()),
-
       GoRoute(
         path: '/checkout',
         redirect: (context, state) => '/entrega',
@@ -158,22 +152,15 @@ class AppRouter {
       GoRoute(
         path: '/culqi-payment',
         builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>? ?? {};
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : <String, dynamic>{};
           return CulqiPaymentScreen(
             pedidoId: extra['pedidoId'] as int? ?? 0,
-            total: extra['total'] as double? ?? 0.0,
+            total: (extra['total'] as num?)?.toDouble() ?? 0.0,
           );
         },
       ),
-
-      // Admin
-      GoRoute(path: '/admin/login', builder: (context, state) => const AdminLoginScreen()),
-      GoRoute(path: '/admin/dashboard', builder: (context, state) => const AdminDashboardScreen()),
-      GoRoute(path: '/admin/productos', builder: (context, state) => const AdminProductosScreen()),
-      GoRoute(path: '/admin/pedidos', builder: (context, state) => const AdminPedidosScreen()),
-      GoRoute(path: '/admin/clientes', builder: (context, state) => const AdminClientesScreen()),
-      GoRoute(path: '/admin/inventario', builder: (context, state) => const AdminInventarioScreen()),
-      GoRoute(path: '/admin/reportes', builder: (context, state) => const AdminReportesScreen()),
 
       GoRoute(path: '/', redirect: (context, state) => '/home'),
     ],
