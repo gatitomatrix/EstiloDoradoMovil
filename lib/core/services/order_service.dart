@@ -1,4 +1,5 @@
 // lib/core/services/order_service.dart
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import '../config/api_config.dart';
 import '../models/checkout_models.dart';
@@ -6,6 +7,20 @@ import 'api_service.dart';
 
 class OrderService {
   final ApiService _api = ApiService();
+
+  static String errorMessage(Object e) {
+    if (e is DioException) {
+      final err = e.error;
+      if (err is ApiException) return err.message;
+      final data = e.response?.data;
+      if (data is Map) {
+        final m = data['message'] ?? data['error'];
+        if (m != null) return m.toString();
+      }
+      return e.message ?? 'Error de red';
+    }
+    return e.toString();
+  }
 
   /// POST /pedidos/confirmar — mismo contrato que Angular OrderService
   Future<ConfirmarRes> confirmar({
@@ -71,26 +86,28 @@ class OrderService {
     return ConfirmarRes.fromJson(Map<String, dynamic>.from(data as Map));
   }
 
-  /// Cobra con Culqi vía backend (token de tarjeta)
-  Future<bool> pagarConCulqi({
-    required String token,
-    required double monto,
-    required String correo,
-    String descripcion = 'Compra Estilo Dorado',
+  /// POST /pedidos/{id}/pagar — completa pago de pedido pendiente (yape/tarjeta)
+  Future<ConfirmarRes> pagarPendiente({
+    required int id,
+    required String formaPago,
+    required String culqiId,
+    required String comprobante,
+    InvoiceData? factura,
+    BoletaData? boleta,
   }) async {
-    try {
-      final res = await _api.post(ApiConfig.pagarCulqi, {
-        'token': token,
-        'monto': monto,
-        'descripcion': descripcion,
-        'correo': correo,
-      });
-      final data = res.data;
-      if (data is Map && data['success'] == true) return true;
-      return false;
-    } catch (e) {
-      debugPrint('pagarConCulqi error: $e');
-      return false;
+    final body = <String, dynamic>{
+      'forma_pago': formaPago,
+      'culqi_id': culqiId,
+      'comprobante': comprobante,
+    };
+    if (factura != null) body['factura'] = factura.toJson();
+    if (boleta != null) body['boleta'] = boleta.toJson();
+
+    final res = await _api.post('${ApiConfig.pedidoById}/$id/pagar', body);
+    final data = res.data;
+    if (data is Map && data['pedido'] is Map) {
+      return ConfirmarRes.fromJson(Map<String, dynamic>.from(data['pedido'] as Map));
     }
+    return ConfirmarRes.fromJson(Map<String, dynamic>.from(data as Map));
   }
 }

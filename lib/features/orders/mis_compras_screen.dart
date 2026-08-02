@@ -22,7 +22,7 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
   int? _cancellingId;
 
   final _filtroId = TextEditingController();
-  String _rango = '1y'; // 1y | 3m | last
+  String _rango = '1y';
 
   @override
   void initState() {
@@ -51,7 +51,7 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudieron cargar tus pedidos.';
+        _error = 'No se pudieron cargar tus pedidos.\n${OrderService.errorMessage(e)}';
         _loading = false;
       });
     }
@@ -118,8 +118,9 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo cancelar: $e'),
+          content: Text('No se pudo cancelar: ${OrderService.errorMessage(e)}'),
           backgroundColor: Colors.red.shade800,
+          duration: const Duration(seconds: 5),
         ),
       );
     } finally {
@@ -152,8 +153,8 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
               borderRadius: BorderRadius.circular(10),
             ),
             child: const Text(
-              'El estado del pedido cambiará según el proceso de compra y el tiempo de entrega o recojo en tienda. '
-              'Los pedidos pendientes se pueden cancelar.',
+              'Los pedidos pendientes se pueden pagar o cancelar. '
+              'El comprobante PDF/XML solo aparece cuando el pedido está pagado.',
               style: TextStyle(fontSize: 13),
             ),
           ),
@@ -199,7 +200,12 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
             child: _loading
                 ? const Center(child: CircularProgressIndicator(color: _gold))
                 : _error != null
-                    ? Center(child: Text(_error!))
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Text(_error!, textAlign: TextAlign.center),
+                        ),
+                      )
                     : RefreshIndicator(
                         color: _gold,
                         onRefresh: _cargar,
@@ -223,7 +229,14 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                 itemBuilder: (context, index) {
                                   final p = list[index];
                                   final pendiente = p.estado.toLowerCase() == 'pendiente';
+                                  final canPayOnline = pendiente &&
+                                      (p.formaPago ?? '').toLowerCase() != 'efectivo';
                                   final cancelling = _cancellingId == p.idPedido;
+                                  final hasCpe = !pendiente &&
+                                      p.comprobanteNumero != null &&
+                                      (p.comprobanteNumero ?? 0) > 0 &&
+                                      (p.comprobanteTipo == 'BO' || p.comprobanteTipo == 'FA');
+
                                   return Card(
                                     margin: const EdgeInsets.only(bottom: 10),
                                     shape: RoundedRectangleBorder(
@@ -262,6 +275,14 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                             Text('Fecha: ${_fmtDate(p.fechaPedido)}'),
                                             Text('Entrega: ${p.direccionEntrega ?? '—'}'),
                                             Text('Pago: ${p.formaPago ?? '—'}'),
+                                            if (hasCpe && p.friendly != null)
+                                              Text(
+                                                'Comprobante: ${p.friendly}',
+                                                style: const TextStyle(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.green,
+                                                ),
+                                              ),
                                             const SizedBox(height: 8),
                                             Row(
                                               children: [
@@ -274,25 +295,52 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                                   ),
                                                 ),
                                                 const Spacer(),
-                                                if (pendiente)
-                                                  TextButton(
-                                                    onPressed: cancelling ? null : () => _cancelar(p),
-                                                    child: cancelling
-                                                        ? const SizedBox(
-                                                            width: 16,
-                                                            height: 16,
-                                                            child: CircularProgressIndicator(strokeWidth: 2),
-                                                          )
-                                                        : Text(
-                                                            'Cancelar',
-                                                            style: TextStyle(color: Colors.red.shade700),
-                                                          ),
-                                                  ),
+                                              ],
+                                            ),
+                                            const SizedBox(height: 8),
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 6,
+                                              children: [
                                                 FilledButton.tonal(
                                                   onPressed: () =>
                                                       context.push('/resumen/${p.idPedido}'),
                                                   child: const Text('Ver detalle'),
                                                 ),
+                                                if (canPayOnline)
+                                                  FilledButton(
+                                                    onPressed: () => context.push(
+                                                      '/pagar-pedido/${p.idPedido}',
+                                                      extra: {
+                                                        'total': p.total,
+                                                        'formaPago': p.formaPago,
+                                                      },
+                                                    ),
+                                                    style: FilledButton.styleFrom(
+                                                      backgroundColor: _gold,
+                                                      foregroundColor: Colors.black87,
+                                                    ),
+                                                    child: const Text('Pagar'),
+                                                  ),
+                                                if (pendiente)
+                                                  TextButton(
+                                                    onPressed:
+                                                        cancelling ? null : () => _cancelar(p),
+                                                    child: cancelling
+                                                        ? const SizedBox(
+                                                            width: 16,
+                                                            height: 16,
+                                                            child: CircularProgressIndicator(
+                                                              strokeWidth: 2,
+                                                            ),
+                                                          )
+                                                        : Text(
+                                                            'Cancelar',
+                                                            style: TextStyle(
+                                                              color: Colors.red.shade700,
+                                                            ),
+                                                          ),
+                                                  ),
                                               ],
                                             ),
                                           ],

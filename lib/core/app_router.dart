@@ -17,6 +17,7 @@ import '../features/checkout/confirmar_entrega_screen.dart';
 import '../features/checkout/pago_screen.dart';
 import '../features/orders/mis_compras_screen.dart';
 import '../features/orders/resumen_pedido_screen.dart';
+import '../features/orders/pagar_pedido_screen.dart';
 import '../features/orders/views/order_success_screen.dart';
 import '../features/payment/culqi_payment_screen.dart';
 import '../features/account/mi_cuenta_screen.dart';
@@ -48,7 +49,8 @@ class AppRouter {
       ];
 
       final needsAuth = protectedRoutes.contains(loc) ||
-          loc.startsWith('/resumen/');
+          loc.startsWith('/resumen/') ||
+          loc.startsWith('/pagar-pedido/');
 
       if (needsAuth && !isLoggedIn) {
         authProvider.setNextRouteAfterLogin(state.uri.toString());
@@ -86,7 +88,7 @@ class AppRouter {
       ),
       GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
 
-      // Fase 1 — flujo compra (alineado con Angular)
+      // Fase 1 — flujo compra
       GoRoute(path: '/entrega', builder: (context, state) => const EntregaScreen()),
       GoRoute(
         path: '/confirmar-entrega',
@@ -111,10 +113,23 @@ class AppRouter {
           );
         },
       ),
+      GoRoute(
+        path: '/pagar-pedido/:id',
+        builder: (context, state) {
+          final id = int.tryParse(state.pathParameters['id'] ?? '0') ?? 0;
+          final extra = state.extra is Map
+              ? Map<String, dynamic>.from(state.extra as Map)
+              : <String, dynamic>{};
+          return PagarPedidoScreen(
+            pedidoId: id,
+            total: (extra['total'] as num?)?.toDouble() ?? 0,
+            formaPagoSugerida: extra['formaPago']?.toString(),
+          );
+        },
+      ),
 
       GoRoute(path: '/mis-compras', builder: (context, state) => const MisComprasScreen()),
 
-      // Compat rutas antiguas
       GoRoute(
         path: '/checkout',
         redirect: (context, state) => '/entrega',

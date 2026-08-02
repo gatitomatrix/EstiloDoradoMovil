@@ -54,7 +54,8 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = 'No se pudo cargar el pedido #${widget.pedidoId}.\n$e';
+        _error =
+            'No se pudo cargar el pedido #${widget.pedidoId}.\n${OrderService.errorMessage(e)}';
         _loading = false;
       });
     }
@@ -149,17 +150,56 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       setState(() => _cancelling = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('No se pudo cancelar: $e'),
+          content: Text('No se pudo cancelar: ${OrderService.errorMessage(e)}'),
           backgroundColor: Colors.red.shade800,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
   }
 
-  bool get _canCancel {
-    final e = (_data?.estado ?? '').toLowerCase();
-    return e == 'pendiente';
+  bool get _isPendiente =>
+      (_data?.estado ?? '').toLowerCase() == 'pendiente';
+
+  bool get _canCancel => _isPendiente;
+
+  bool get _canPayOnline {
+    if (!_isPendiente) return false;
+    final fp = (_data?.formaPago ?? '').toLowerCase();
+    // Efectivo se paga en tienda; yape/tarjeta (o sin forma) pueden pagarse en app
+    return fp != 'efectivo';
+  }
+
+  bool get _isCashPending {
+    if (!_isPendiente) return false;
+    return (_data?.formaPago ?? '').toLowerCase() == 'efectivo';
+  }
+
+  /// Solo mostrar comprobante si el pedido está pagado/entregado y hay CPE real.
+  bool get _showComprobante {
+    final d = _data;
+    if (d == null) return false;
+    final estado = d.estado.toLowerCase();
+    if (!const {'pagado', 'enviado', 'entregado', 'completado'}.contains(estado)) {
+      return false;
+    }
+    final comp = d.comprobante ?? widget.comprobanteExtra;
+    if (comp == null) return false;
+    if (comp.tipo != 'FA' && comp.tipo != 'BO') return false;
+    if (comp.numero <= 0) return false;
+    return true;
+  }
+
+  void _irAPagar() {
+    final d = _data!;
+    context.push(
+      '/pagar-pedido/${d.idPedido}',
+      extra: {
+        'total': d.total,
+        'formaPago': d.formaPago,
+      },
+    );
   }
 
   @override
@@ -204,8 +244,6 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
   Widget _buildBody() {
     final d = _data!;
     final comp = d.comprobante ?? widget.comprobanteExtra;
-    final isCash = d.formaPago.toLowerCase() == 'efectivo';
-    final hasElectronic = comp != null && (comp.tipo == 'FA' || comp.tipo == 'BO');
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -252,7 +290,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             children: [
               const Padding(
                 padding: EdgeInsets.all(16),
-                child: Text('Detalle de productos', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                child: Text(
+                  'Detalle de productos',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
               ),
               if (d.detalles == null || d.detalles!.isEmpty)
                 const Padding(
@@ -282,7 +323,9 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        if (hasElectronic)
+
+        // Comprobante solo si la compra está pagada y hay CPE real
+        if (_showComprobante && comp != null)
           Card(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -290,7 +333,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    comp!.tipo == 'FA' ? 'FACTURA ELECTRÓNICA' : 'BOLETA ELECTRÓNICA',
+                    comp.tipo == 'FA' ? 'FACTURA ELECTRÓNICA' : 'BOLETA ELECTRÓNICA',
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   Text(comp.friendly, style: TextStyle(color: Colors.grey[700])),
@@ -320,28 +363,51 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
               ),
             ),
           )
-        else if (isCash)
+        else if (_isCashPending)
           Card(
             color: Colors.amber.shade50,
             child: const ListTile(
-              leading: Icon(Icons.info_outline, color: Colors.orange),
+              leading: Icon(Icons.storefront, color: Colors.orange),
               title: Text('Pago en efectivo (retiro en tienda)'),
               subtitle: Text(
-                'El pedido queda pendiente de pago en tienda. Puedes cancelarlo mientras esté pendiente.',
+                'Paga al recoger. Mientras esté pendiente puedes cancelar el pedido.',
               ),
             ),
           )
-        else if (d.estado.toLowerCase() == 'pendiente')
+        else if (_isPendiente)
           Card(
             color: Colors.orange.shade50,
             child: const ListTile(
               leading: Icon(Icons.pending_actions, color: Colors.orange),
               title: Text('Pedido pendiente de pago'),
-              subtitle: Text('Aún no se registró un pago confirmado.'),
+              subtitle: Text(
+                'Aún no hay comprobante electrónico. Completa el pago o cancela el pedido.',
+              ),
             ),
           ),
-        if (_canCancel) ...[
+
+        // Acciones de pendiente
+        if (_canPayOnline) ...[
           const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: ElevatedButton.icon(
+              onPressed: _irAPagar,
+              icon: const Icon(Icons.credit_card),
+              label: const Text(
+                'Pagar ahora',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _gold,
+                foregroundColor: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+        if (_canCancel) ...[
+          const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
             height: 50,
@@ -364,6 +430,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
             ),
           ),
         ],
+
         const SizedBox(height: 20),
         SizedBox(
           width: double.infinity,
@@ -371,7 +438,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
           child: ElevatedButton(
             onPressed: () => context.go('/home'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red.shade700),
-            child: const Text('Seguir comprando', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: const Text(
+              'Seguir comprando',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
           ),
         ),
         const SizedBox(height: 10),
@@ -392,7 +462,10 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(width: 70, child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600))),
+            SizedBox(
+              width: 70,
+              child: Text('$k:', style: const TextStyle(fontWeight: FontWeight.w600)),
+            ),
             Expanded(child: Text(v)),
           ],
         ),
