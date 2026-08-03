@@ -8,10 +8,12 @@ class AuthProvider extends ChangeNotifier {
   bool _isLoggedIn = false;
   Map<String, dynamic>? _user;
   String? _nextRouteAfterLogin;
+  String? _lastError;
 
   bool get isLoggedIn => _isLoggedIn;
   Map<String, dynamic>? get user => _user;
   String? get nextRouteAfterLogin => _nextRouteAfterLogin;
+  String? get lastError => _lastError;
 
   /// Verifica si hay sesión al arrancar la app
   Future<void> checkAuth() async {
@@ -25,6 +27,8 @@ class AuthProvider extends ChangeNotifier {
       if (me != null) {
         _user = me;
       } else {
+        // Token inválido / servidor caído: limpiar sesión local
+        await _authService.logout();
         _isLoggedIn = false;
         _user = null;
       }
@@ -41,6 +45,7 @@ class AuthProvider extends ChangeNotifier {
     String? telefono,
     String? direccion,
   }) async {
+    _lastError = null;
     final response = await _authService.register(
       nombre: nombre,
       email: email,
@@ -55,13 +60,17 @@ class AuthProvider extends ChangeNotifier {
       _user = response['user'] is Map
           ? Map<String, dynamic>.from(response['user'] as Map)
           : null;
+      _lastError = null;
       notifyListeners();
       return true;
     }
+    _lastError = response['error']?.toString() ?? 'No se pudo registrar';
+    notifyListeners();
     return false;
   }
 
   Future<bool> login(String email, String password) async {
+    _lastError = null;
     final response = await _authService.login(email, password);
 
     if (response['success'] == true) {
@@ -69,9 +78,12 @@ class AuthProvider extends ChangeNotifier {
       _user = response['user'] is Map
           ? Map<String, dynamic>.from(response['user'] as Map)
           : null;
+      _lastError = null;
       notifyListeners();
       return true;
     }
+    _lastError = response['error']?.toString() ?? 'Credenciales incorrectas';
+    notifyListeners();
     return false;
   }
 
@@ -80,6 +92,7 @@ class AuthProvider extends ChangeNotifier {
     _isLoggedIn = false;
     _user = null;
     _nextRouteAfterLogin = null;
+    _lastError = null;
     notifyListeners();
   }
 
@@ -99,6 +112,7 @@ class AuthProvider extends ChangeNotifier {
     String? telefono,
     String? direccion,
   }) async {
+    _lastError = null;
     final user = await _authService.updateProfile(
       nombre: nombre,
       apellido: apellido,
@@ -111,6 +125,8 @@ class AuthProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     }
+    _lastError = 'No se pudo actualizar el perfil';
+    notifyListeners();
     return false;
   }
 }

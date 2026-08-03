@@ -35,24 +35,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    final exists = await _authService.checkEmail(_emailController.text.trim());
-    if (!mounted) return;
-    setState(() => _isLoading = false);
+    try {
+      final exists = await _authService.checkEmail(_emailController.text.trim());
+      if (!mounted) return;
+      setState(() => _isLoading = false);
 
-    if (!exists) {
+      if (!exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('No encontramos una cuenta con ese correo'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      setState(() {
+        _emailOk = _emailController.text.trim();
+        _step = 2;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('No encontramos una cuenta con ese correo'),
+        SnackBar(
+          content: Text(AuthService.errorMessage(e)),
           backgroundColor: Colors.red,
         ),
       );
-      return;
     }
-
-    setState(() {
-      _emailOk = _emailController.text.trim();
-      _step = 2;
-    });
   }
 
   Future<void> _guardarPassword() async {

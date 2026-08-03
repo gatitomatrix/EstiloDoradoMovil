@@ -4,6 +4,9 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/utils/input_formatters.dart';
+
+const _gold = Color(0xFFD4AF37);
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -15,6 +18,8 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _apellidoController = TextEditingController();
+  final _telefonoController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -26,6 +31,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _apellidoController.dispose();
+    _telefonoController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -47,10 +54,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     setState(() => _isLoading = true);
 
-    final success = await Provider.of<AuthProvider>(context, listen: false).register(
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final success = await auth.register(
       _nameController.text.trim(),
       _emailController.text.trim(),
       _passwordController.text,
+      apellido: _apellidoController.text.trim().isEmpty
+          ? null
+          : _apellidoController.text.trim(),
+      telefono: _telefonoController.text.trim().isEmpty
+          ? null
+          : _telefonoController.text.trim(),
     );
 
     if (!mounted) return;
@@ -59,17 +73,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
     if (success) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('¡Registro exitoso!'),
+          content: Text('¡Cuenta creada! Ya puedes comprar.'),
           backgroundColor: Colors.green,
         ),
       );
-      // Ya queda logueado tras register → ir al home
-      context.go('/home');
+      final next = auth.nextRouteAfterLogin;
+      auth.clearNextRouteAfterLogin();
+      if (next != null && !next.startsWith('/admin')) {
+        context.go(next);
+      } else {
+        context.go('/home');
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Error al registrar'),
+        SnackBar(
+          content: Text(auth.lastError ?? 'Error al registrar'),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
@@ -79,11 +99,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Crear Cuenta'),
-        backgroundColor: const Color(0xFFD4AF37),
+        title: const Text('Crear cuenta'),
+        backgroundColor: _gold,
+        foregroundColor: Colors.black87,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/login'),
         ),
       ),
       backgroundColor: const Color(0xFFF8F1E9),
@@ -96,46 +117,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Crea tu cuenta',
-                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-                ),
-                const Text(
                   'Únete a Estilo Dorado',
-                  style: TextStyle(color: Colors.grey),
+                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 40),
+                const SizedBox(height: 6),
+                Text(
+                  'Crea tu cuenta para comprar y ver tus pedidos.',
+                  style: TextStyle(color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 28),
 
-                // Nombre
                 TextFormField(
                   controller: _nameController,
+                  textCapitalization: TextCapitalization.words,
                   decoration: const InputDecoration(
-                    labelText: 'Nombre completo',
+                    labelText: 'Nombre *',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person_outline),
                   ),
                   inputFormatters: [
                     FilteringTextInputFormatter.allow(
-                      RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]'),
+                      RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s']"),
                     ),
                   ],
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Ingrese su nombre';
                     }
-                    if (value.trim().length < 3) {
-                      return 'El nombre debe tener al menos 3 letras';
+                    if (value.trim().length < 2) {
+                      return 'Nombre demasiado corto';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Correo
+                TextFormField(
+                  controller: _apellidoController,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: const InputDecoration(
+                    labelText: 'Apellido (opcional)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.badge_outlined),
+                  ),
+                  inputFormatters: [
+                    FilteringTextInputFormatter.allow(
+                      RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s']"),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                TextFormField(
+                  controller: _telefonoController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Teléfono (opcional)',
+                    hintText: '9xxxxxxxx',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                  inputFormatters: AppInputFormatters.phonePe,
+                  validator: (value) {
+                    final v = value?.trim() ?? '';
+                    if (v.isEmpty) return null;
+                    if (!RegExp(r'^9\d{8}$').hasMatch(v)) {
+                      return 'Celular peruano: 9 dígitos empezando en 9';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 14),
+
                 TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
+                  autocorrect: false,
                   decoration: const InputDecoration(
-                    labelText: 'Correo electrónico',
+                    labelText: 'Correo electrónico *',
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
@@ -143,20 +202,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (value == null || value.trim().isEmpty) {
                       return 'Ingrese su correo';
                     }
-                    if (!value.contains('@')) {
-                      return 'Ingrese un correo válido';
+                    final email = value.trim();
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(email)) {
+                      return 'Correo no válido';
                     }
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Contraseña
                 TextFormField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Contraseña',
+                    labelText: 'Contraseña *',
+                    helperText: 'Mínimo 6 caracteres',
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
@@ -180,14 +240,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
 
-                // Confirmar contraseña
                 TextFormField(
                   controller: _confirmPasswordController,
                   obscureText: _obscureConfirm,
                   decoration: InputDecoration(
-                    labelText: 'Confirmar contraseña',
+                    labelText: 'Confirmar contraseña *',
                     border: const OutlineInputBorder(),
                     prefixIcon: const Icon(Icons.lock_outline),
                     suffixIcon: IconButton(
@@ -211,28 +270,40 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 28),
 
                 SizedBox(
                   width: double.infinity,
-                  height: 56,
+                  height: 54,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _register,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
+                      backgroundColor: _gold,
+                      foregroundColor: Colors.black87,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: _isLoading
-                        ? const CircularProgressIndicator(color: Colors.white)
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Text(
-                            'Crear Cuenta',
+                            'Crear cuenta',
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 17,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton(
+                    onPressed: () => context.go('/login'),
+                    child: const Text('¿Ya tienes cuenta? Inicia sesión'),
                   ),
                 ),
               ],

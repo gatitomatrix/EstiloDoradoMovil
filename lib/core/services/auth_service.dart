@@ -1,5 +1,6 @@
 // lib/core/services/auth_service.dart
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../config/api_config.dart';
@@ -8,6 +9,30 @@ import 'api_service.dart';
 class AuthService {
   final ApiService _api = ApiService();
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
+
+  static String errorMessage(Object e) {
+    if (e is DioException) {
+      final err = e.error;
+      if (err is ApiException) return err.message;
+      final data = e.response?.data;
+      if (data is Map) {
+        final m = data['message'];
+        if (m is String && m.isNotEmpty) return m;
+        final errors = data['errors'];
+        if (errors is Map && errors.isNotEmpty) {
+          final first = errors.values.first;
+          if (first is List && first.isNotEmpty) return first.first.toString();
+          return first.toString();
+        }
+      }
+      if (e.type == DioExceptionType.connectionError ||
+          e.type == DioExceptionType.connectionTimeout) {
+        return 'No se pudo conectar al servidor. Revisa que Laravel esté en marcha.';
+      }
+      return e.message ?? 'Error de red';
+    }
+    return e.toString();
+  }
 
   Future<Map<String, dynamic>> register({
     required String nombre,
@@ -30,7 +55,7 @@ class AuthService {
       return await _persistSession(response.data);
     } catch (e) {
       debugPrint('Error en register: $e');
-      return {'success': false, 'error': e.toString()};
+      return {'success': false, 'error': errorMessage(e)};
     }
   }
 
@@ -43,7 +68,7 @@ class AuthService {
       return await _persistSession(response.data);
     } catch (e) {
       debugPrint('Error en login: $e');
-      return {'success': false, 'error': e.toString()};
+      return {'success': false, 'error': errorMessage(e)};
     }
   }
 
@@ -87,16 +112,18 @@ class AuthService {
 
   Future<Map<String, dynamic>> _persistSession(dynamic data) async {
     if (data is! Map) {
-      return {'success': false, 'error': 'Respuesta inválida'};
+      return {'success': false, 'error': 'Respuesta inválida del servidor'};
     }
 
-    final token = data['token']?.toString();
-    final user = data['cliente'] ?? data['user'];
+    // A veces viene anidado
+    final map = Map<String, dynamic>.from(data);
+    final token = map['token']?.toString();
+    final user = map['cliente'] ?? map['user'];
 
     if (token == null || token.isEmpty) {
       return {
         'success': false,
-        'error': data['message']?.toString() ?? 'Sin token',
+        'error': map['message']?.toString() ?? 'No se recibió token de sesión',
       };
     }
 
@@ -145,7 +172,11 @@ class AuthService {
     } catch (e) {
       // 404 u otro error = no existe / fallo
       debugPrint('Error checkEmail: $e');
-      return false;
+      if (e is DioException && e.response?.statusCode == 404) {
+        return false;
+      }
+      // Si el API no responde, no fingir "no existe"
+      rethrow;
     }
   }
 
@@ -162,14 +193,15 @@ class AuthService {
 
       return {
         'success': true,
-        'message': response.data['message']?.toString() ??
-            'Contraseña actualizada',
+        'message': response.data is Map
+            ? (response.data['message']?.toString() ?? 'Contraseña actualizada')
+            : 'Contraseña actualizada',
       };
     } catch (e) {
       debugPrint('Error resetPassword: $e');
       return {
         'success': false,
-        'error': e.toString(),
+        'error': errorMessage(e),
       };
     }
   }

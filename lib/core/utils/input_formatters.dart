@@ -90,3 +90,11 @@ List<TextInputFormatter> digitsMax(int n) => [
       DigitsOnlyFormatter(),
       LengthLimitingTextInputFormatter(n),
     ];
+
+/// Helpers de nombre estático (pantallas de auth / formularios)
+class AppInputFormatters {
+  static List<TextInputFormatter> get phonePe => digitsMax(9);
+  static List<TextInputFormatter> get dni => digitsMax(8);
+  static List<TextInputFormatter> get ruc => digitsMax(11);
+  static List<TextInputFormatter> get cvv => digitsMax(3);
+}
