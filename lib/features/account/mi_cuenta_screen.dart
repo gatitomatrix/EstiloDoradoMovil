@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/utils/input_formatters.dart';
 
 class MiCuentaScreen extends StatefulWidget {
   const MiCuentaScreen({super.key});
@@ -178,9 +179,19 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                       keyboardType: TextInputType.phone,
                       decoration: const InputDecoration(
                         labelText: 'Teléfono',
+                        hintText: '9xxxxxxxx',
                         border: OutlineInputBorder(),
                         prefixIcon: Icon(Icons.phone_outlined),
                       ),
+                      inputFormatters: AppInputFormatters.phonePe,
+                      validator: (v) {
+                        final t = v?.trim() ?? '';
+                        if (t.isEmpty) return null;
+                        if (!RegExp(r'^9\d{8}$').hasMatch(t)) {
+                          return 'Celular: 9 dígitos empezando en 9';
+                        }
+                        return null;
+                      },
                     ),
                     const SizedBox(height: 16),
 

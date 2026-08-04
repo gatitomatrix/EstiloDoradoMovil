@@ -498,7 +498,13 @@ class _PagoScreenState extends State<PagoScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Pago')),
+      appBar: AppBar(
+        title: const Text('Pago'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go('/entrega'),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [

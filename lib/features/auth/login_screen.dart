@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/cart_provider.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -12,6 +13,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
@@ -25,27 +27,36 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context, listen: false);
     final success = await authProvider.login(
       _emailController.text.trim(),
       _passwordController.text,
     );
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
     if (success) {
+      // Fusionar carrito invitado ANTES de navegar a entrega
+      final uid = authProvider.user?['id_cliente'];
+      final id = uid is int ? uid : int.tryParse(uid?.toString() ?? '');
+      await cart.bindUser(id);
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
       final nextRoute = authProvider.nextRouteAfterLogin;
+      authProvider.clearNextRouteAfterLogin();
       if (nextRoute != null && !nextRoute.startsWith('/admin')) {
-        authProvider.clearNextRouteAfterLogin();
         context.go(nextRoute);
       } else {
-        authProvider.clearNextRouteAfterLogin();
         context.go('/home');
       }
     } else {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(authProvider.lastError ?? 'Credenciales incorrectas'),
@@ -65,98 +76,112 @@ class _LoginScreenState extends State<LoginScreen> {
         elevation: 0,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/home'),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
         ),
         title: const Text('Iniciar Sesión'),
       ),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Image.asset(
-                'assets/images/logo_empresa.jpeg',
-                height: 120,
-                errorBuilder: (_, __, ___) => const Icon(
-                  Icons.storefront,
-                  size: 100,
-                  color: Color(0xFFD4AF37),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Bienvenido',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'Ingresa para continuar',
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 40),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                  labelText: 'Email',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email_outlined),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _obscure,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  border: const OutlineInputBorder(),
-                  prefixIcon: const Icon(Icons.lock_outline),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscure ? Icons.visibility_off : Icons.visibility,
-                    ),
-                    onPressed: () => setState(() => _obscure = !_obscure),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Image.asset(
+                  'assets/images/logo_empresa.jpeg',
+                  height: 120,
+                  errorBuilder: (_, __, ___) => const Icon(
+                    Icons.storefront,
+                    size: 100,
+                    color: Color(0xFFD4AF37),
                   ),
                 ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFD4AF37),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                const SizedBox(height: 24),
+                const Text(
+                  'Bienvenido',
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Ingresa para continuar tu compra',
+                  style: TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 40),
+                TextFormField(
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'Email',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.email_outlined),
+                  ),
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Ingresa tu correo';
+                    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(v.trim())) {
+                      return 'Correo no válido';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscure,
+                  decoration: InputDecoration(
+                    labelText: 'Contraseña',
+                    border: const OutlineInputBorder(),
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    suffixIcon: IconButton(
+                      icon: Icon(
+                        _obscure ? Icons.visibility_off : Icons.visibility,
+                      ),
+                      onPressed: () => setState(() => _obscure = !_obscure),
                     ),
                   ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Ingresar',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                  validator: (v) {
+                    if (v == null || v.isEmpty) return 'Ingresa tu contraseña';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 32),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Ingresar',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
+                  ),
                 ),
-              ),
-              TextButton(
-                onPressed: () => context.push('/recuperar'),
-                child: const Text('¿Olvidaste tu contraseña?'),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () => context.push('/registro'),
-                child: const Text('¿No tienes cuenta? Regístrate'),
-              ),
-              TextButton(
-                onPressed: () => context.go('/home'),
-                child: const Text('Continuar sin iniciar sesión'),
-              ),
-            ],
+                TextButton(
+                  onPressed: () => context.push('/recuperar'),
+                  child: const Text('¿Olvidaste tu contraseña?'),
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  onPressed: () => context.push('/registro'),
+                  child: const Text('¿No tienes cuenta? Regístrate'),
+                ),
+                TextButton(
+                  onPressed: () => context.go('/home'),
+                  child: const Text('Continuar sin iniciar sesión'),
+                ),
+              ],
+            ),
           ),
         ),
       ),

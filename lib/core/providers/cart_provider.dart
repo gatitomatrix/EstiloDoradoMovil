@@ -37,6 +37,22 @@ class CartItem {
         stockMax: int.tryParse(j['stockMax']?.toString() ?? '99') ?? 99,
         cantidad: int.tryParse(j['cantidad']?.toString() ?? '1') ?? 1,
       );
+
+  CartItem copyWith({
+    int? cantidad,
+    int? stockMax,
+    String? nombre,
+    double? precio,
+    String? imagenUrl,
+  }) =>
+      CartItem(
+        id: id,
+        nombre: nombre ?? this.nombre,
+        precio: precio ?? this.precio,
+        imagenUrl: imagenUrl ?? this.imagenUrl,
+        stockMax: stockMax ?? this.stockMax,
+        cantidad: cantidad ?? this.cantidad,
+      );
 }
 
 /// Resultado de agregar / actualizar cantidad en carrito (para feedback UI).
@@ -46,6 +62,7 @@ class CartProvider extends ChangeNotifier {
   final List<CartItem> _items = [];
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   int? _userId;
+  bool _initialized = false;
 
   List<CartItem> get items => List.unmodifiable(_items);
 
@@ -56,24 +73,85 @@ class CartProvider extends ChangeNotifier {
 
   int get itemCount => _items.fold(0, (s, i) => s + i.cantidad);
 
+  static const _guestKey = 'ed_cart_guest';
+
+  String get _key =>
+      _userId == null ? _guestKey : 'ed_cart_user_$_userId';
+
+  /// Carga carrito invitado al arrancar (antes de saber si hay sesión).
+  Future<void> initGuest() async {
+    if (_initialized) return;
+    _userId = null;
+    await _load();
+    _initialized = true;
+    notifyListeners();
+  }
+
+  /// Asocia carrito al usuario. En login: fusiona guest + user.
   Future<void> bindUser(int? userId) async {
+    // Logout: guardar user, vaciar y recargar guest vacío
     if (_userId != null && userId == null) {
       await _persist();
       _items.clear();
       _userId = null;
+      await _storage.write(key: _guestKey, value: '[]');
       notifyListeners();
       return;
     }
+
+    // Login o cambio de usuario
     if (userId != null && userId != _userId) {
-      if (_userId != null) await _persist();
+      // Snapshot de lo que hay ahora (suele ser guest)
+      final guestSnapshot = List<CartItem>.from(_items);
+
+      if (_userId != null) {
+        await _persist();
+      }
+
       _userId = userId;
-      await _load();
+      await _load(); // carrito del usuario
+
+      if (guestSnapshot.isNotEmpty) {
+        _mergeItems(guestSnapshot);
+        await _persist();
+        // Limpiar guest para no re-fusionar
+        await _storage.write(key: _guestKey, value: '[]');
+      }
+
       notifyListeners();
+      return;
+    }
+
+    // Primera carga sin usuario
+    if (userId == null && !_initialized) {
+      await initGuest();
     }
   }
 
-  String get _key =>
-      _userId == null ? 'ed_cart_guest' : 'ed_cart_user_$_userId';
+  void _mergeItems(List<CartItem> extra) {
+    for (final g in extra) {
+      final idx = _items.indexWhere((i) => i.id == g.id);
+      final max = (g.stockMax > 0 ? g.stockMax : 99);
+      if (idx < 0) {
+        _items.add(CartItem(
+          id: g.id,
+          nombre: g.nombre,
+          precio: g.precio,
+          imagenUrl: g.imagenUrl,
+          stockMax: max,
+          cantidad: g.cantidad.clamp(1, max),
+        ));
+      } else {
+        final cur = _items[idx];
+        final m = cur.stockMax > 0 ? cur.stockMax : max;
+        cur.stockMax = m;
+        cur.cantidad = (cur.cantidad + g.cantidad).clamp(1, m);
+        if (g.nombre.isNotEmpty) {
+          // keep product info freshest
+        }
+      }
+    }
+  }
 
   Future<void> _load() async {
     try {
@@ -83,7 +161,6 @@ class CartProvider extends ChangeNotifier {
       final list = jsonDecode(raw) as List;
       for (final e in list) {
         final item = CartItem.fromJson(Map<String, dynamic>.from(e as Map));
-        // Clamp por si el stock bajó o se guardó mal
         final max = item.stockMax < 1 ? 1 : item.stockMax;
         item.stockMax = max;
         item.cantidad = item.cantidad.clamp(1, max);
@@ -103,7 +180,6 @@ class CartProvider extends ChangeNotifier {
     }
   }
 
-  /// Actualiza stockMax de un ítem ya en carrito (p.ej. al reabrir detalle).
   void syncStockMax(int productId, int stockMax) {
     final index = _items.indexWhere((i) => i.id == productId);
     if (index < 0) return;
@@ -116,7 +192,6 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Sincroniza stock de varios productos (mapa id → stock).
   void syncStocks(Map<int, int> stockById) {
     var changed = false;
     for (final item in _items) {
@@ -142,7 +217,6 @@ class CartProvider extends ChangeNotifier {
     final index = _items.indexWhere((i) => i.id == item.id);
     if (index >= 0) {
       final cur = _items[index];
-      // Siempre refrescar stockMax con el valor actual del producto
       cur.stockMax = max;
       if (cur.cantidad >= max) {
         cur.cantidad = max;
@@ -178,7 +252,6 @@ class CartProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Devuelve false si no se pudo subir por stock.
   bool updateQuantity(int id, int cantidad) {
     final index = _items.indexWhere((item) => item.id == id);
     if (index < 0) return false;

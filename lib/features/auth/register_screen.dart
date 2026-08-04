@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/cart_provider.dart';
 import '../../core/utils/input_formatters.dart';
 
 const _gold = Color(0xFFD4AF37);
@@ -55,6 +56,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     setState(() => _isLoading = true);
 
     final auth = Provider.of<AuthProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context, listen: false);
     final success = await auth.register(
       _nameController.text.trim(),
       _emailController.text.trim(),
@@ -68,9 +70,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
 
     if (!mounted) return;
-    setState(() => _isLoading = false);
 
     if (success) {
+      final uid = auth.user?['id_cliente'];
+      final id = uid is int ? uid : int.tryParse(uid?.toString() ?? '');
+      await cart.bindUser(id);
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('¡Cuenta creada! Ya puedes comprar.'),
@@ -85,6 +92,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         context.go('/home');
       }
     } else {
+      setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(auth.lastError ?? 'Error al registrar'),
