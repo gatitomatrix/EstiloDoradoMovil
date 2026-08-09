@@ -211,14 +211,36 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                         onRefresh: _cargar,
                         child: list.isEmpty
                             ? ListView(
-                                children: const [
-                                  SizedBox(height: 80),
-                                  Icon(Icons.shopping_bag_outlined, size: 90, color: Colors.grey),
-                                  SizedBox(height: 16),
-                                  Center(
+                                children: [
+                                  const SizedBox(height: 80),
+                                  const Icon(Icons.shopping_bag_outlined, size: 90, color: Colors.grey),
+                                  const SizedBox(height: 16),
+                                  const Center(
                                     child: Text(
-                                      '¡Oh! Aún no tienes compras online.',
-                                      style: TextStyle(fontSize: 16),
+                                      'Aún no tienes compras online',
+                                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Center(
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 32),
+                                      child: Text(
+                                        'Cuando compres, verás aquí el estado y el detalle de cada pedido.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.grey),
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  Center(
+                                    child: FilledButton(
+                                      onPressed: () => context.go('/home'),
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: _gold,
+                                        foregroundColor: Colors.black87,
+                                      ),
+                                      child: const Text('Ir a comprar'),
                                     ),
                                   ),
                                 ],

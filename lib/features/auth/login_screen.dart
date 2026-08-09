@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _googleLoading = false;
   bool _obscure = true;
 
   @override
@@ -26,12 +28,29 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _afterLoginOk(AuthProvider authProvider) async {
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    final uid = authProvider.user?['id_cliente'];
+    final id = uid is int ? uid : int.tryParse(uid?.toString() ?? '');
+    await cart.bindUser(id);
+
+    if (!mounted) return;
+    AppSnackBar.ok(context, 'Sesión iniciada');
+
+    final nextRoute = authProvider.nextRouteAfterLogin;
+    authProvider.clearNextRouteAfterLogin();
+    if (nextRoute != null && !nextRoute.startsWith('/admin')) {
+      context.go(nextRoute);
+    } else {
+      context.go('/home');
+    }
+  }
+
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
 
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final cart = Provider.of<CartProvider>(context, listen: false);
     final success = await authProvider.login(
       _emailController.text.trim(),
       _passwordController.text,
@@ -40,30 +59,25 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
 
     if (success) {
-      // Fusionar carrito invitado ANTES de navegar a entrega
-      final uid = authProvider.user?['id_cliente'];
-      final id = uid is int ? uid : int.tryParse(uid?.toString() ?? '');
-      await cart.bindUser(id);
-
-      if (!mounted) return;
       setState(() => _isLoading = false);
-
-      final nextRoute = authProvider.nextRouteAfterLogin;
-      authProvider.clearNextRouteAfterLogin();
-      if (nextRoute != null && !nextRoute.startsWith('/admin')) {
-        context.go(nextRoute);
-      } else {
-        context.go('/home');
-      }
+      await _afterLoginOk(authProvider);
     } else {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(authProvider.lastError ?? 'Credenciales incorrectas'),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 4),
-        ),
-      );
+      AppSnackBar.err(context, authProvider.lastError ?? 'Credenciales incorrectas');
+    }
+  }
+
+  /// Demo local de Google (sin Client ID). Para Google real: idToken + GOOGLE_CLIENT_ID en Laravel.
+  Future<void> _loginGoogleDemo() async {
+    setState(() => _googleLoading = true);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.loginWithGoogle(demo: true);
+    if (!mounted) return;
+    setState(() => _googleLoading = false);
+    if (success) {
+      await _afterLoginOk(authProvider);
+    } else {
+      AppSnackBar.err(context, authProvider.lastError ?? 'No se pudo iniciar con Google');
     }
   }
 
@@ -144,12 +158,12 @@ class _LoginScreenState extends State<LoginScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 32),
+                const SizedBox(height: 24),
                 SizedBox(
                   width: double.infinity,
                   height: 56,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
+                    onPressed: _isLoading || _googleLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFFD4AF37),
                       shape: RoundedRectangleBorder(
@@ -167,11 +181,44 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                   ),
                 ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 52,
+                  child: OutlinedButton.icon(
+                    onPressed: _isLoading || _googleLoading ? null : _loginGoogleDemo,
+                    icon: const Text(
+                      'G',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF4285F4),
+                        fontSize: 18,
+                      ),
+                    ),
+                    label: Text(
+                      _googleLoading ? 'Conectando…' : 'Continuar con Google',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      side: const BorderSide(color: Color(0xFFE7DAC6)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'En local usa modo demo (sin Client ID de Google).',
+                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                  textAlign: TextAlign.center,
+                ),
                 TextButton(
                   onPressed: () => context.push('/recuperar'),
                   child: const Text('¿Olvidaste tu contraseña?'),
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 8),
                 TextButton(
                   onPressed: () => context.push('/registro'),
                   child: const Text('¿No tienes cuenta? Regístrate'),

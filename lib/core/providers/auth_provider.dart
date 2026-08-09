@@ -87,6 +87,30 @@ class AuthProvider extends ChangeNotifier {
     return false;
   }
 
+  Future<bool> loginWithGoogle({
+    String? idToken,
+    bool demo = true,
+  }) async {
+    _lastError = null;
+    final response = await _authService.loginWithGoogle(
+      idToken: idToken,
+      demo: demo && (idToken == null || idToken.isEmpty),
+    );
+
+    if (response['success'] == true) {
+      _isLoggedIn = true;
+      _user = response['user'] is Map
+          ? Map<String, dynamic>.from(response['user'] as Map)
+          : null;
+      _lastError = null;
+      notifyListeners();
+      return true;
+    }
+    _lastError = response['error']?.toString() ?? 'No se pudo iniciar con Google';
+    notifyListeners();
+    return false;
+  }
+
   Future<void> logout() async {
     await _authService.logout();
     _isLoggedIn = false;

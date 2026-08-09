@@ -1,10 +1,12 @@
 // lib/features/products/product_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../core/models/product_model.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/product_provider.dart';
+import '../../core/utils/app_snackbar.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
@@ -15,19 +17,46 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  Product? _product;
+  bool _loading = true;
+  String? _error;
+
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final productProvider = context.read<ProductProvider>();
-      final cart = context.read<CartProvider>();
-      final product = productProvider.products
-          .cast<Product?>()
-          .firstWhere((p) => p?.id == widget.productId, orElse: () => null);
-      if (product != null) {
-        cart.syncStockMax(product.id, product.stock);
-      }
+    WidgetsBinding.instance.addPostFrameCallback((_) => _load());
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
     });
+    final productProvider = context.read<ProductProvider>();
+    final cart = context.read<CartProvider>();
+    try {
+      final p = await productProvider.getById(widget.productId);
+      if (!mounted) return;
+      if (p == null) {
+        setState(() {
+          _product = null;
+          _loading = false;
+          _error = 'Producto no encontrado';
+        });
+        return;
+      }
+      cart.syncStockMax(p.id, p.stock);
+      setState(() {
+        _product = p;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _loading = false;
+        _error = e.toString();
+      });
+    }
   }
 
   void _addToCart(Product product, CartProvider cartProvider) {
@@ -43,58 +72,65 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
 
     String msg;
-    Color bg;
     switch (result) {
       case CartAddResult.added:
         msg = '${product.nombre} agregado al carrito';
-        bg = const Color(0xFFD4AF37);
-        break;
+        AppSnackBar.ok(context, msg, actionLabel: 'Ver carrito', onAction: () => context.push('/cart'));
+        return;
       case CartAddResult.increased:
         msg = 'Cantidad actualizada (máx. ${product.stock})';
-        bg = const Color(0xFFD4AF37);
-        break;
+        AppSnackBar.ok(context, msg);
+        return;
       case CartAddResult.atLimit:
-        msg = 'Solo hay ${product.stock} unidades disponibles';
-        bg = Colors.orange.shade800;
-        break;
+        AppSnackBar.warn(context, 'Solo hay ${product.stock} unidades disponibles');
+        return;
       case CartAddResult.outOfStock:
-        msg = 'Producto agotado';
-        bg = Colors.red.shade700;
-        break;
+        AppSnackBar.err(context, 'Producto agotado');
+        return;
     }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: bg,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final productProvider = Provider.of<ProductProvider>(context);
     final cartProvider = Provider.of<CartProvider>(context);
 
-    final Product? product = productProvider.products
-        .cast<Product?>()
-        .firstWhere((p) => p?.id == widget.productId, orElse: () => null);
+    if (_loading) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Producto'),
+          backgroundColor: const Color(0xFFD4AF37),
+        ),
+        body: const Center(child: CircularProgressIndicator(color: Color(0xFFD4AF37))),
+      );
+    }
 
+    final product = _product;
     if (product == null) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Producto no encontrado'),
+          title: const Text('Producto'),
           backgroundColor: const Color(0xFFD4AF37),
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+          ),
         ),
-        body: const Center(
+        body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(Icons.search_off, size: 80, color: Colors.grey),
-              SizedBox(height: 16),
-              Text('Este producto no existe', style: TextStyle(fontSize: 18)),
+              const Icon(Icons.search_off, size: 80, color: Colors.grey),
+              const SizedBox(height: 16),
+              Text(_error ?? 'Este producto no existe', style: const TextStyle(fontSize: 18)),
+              const SizedBox(height: 16),
+              FilledButton(
+                onPressed: () => context.go('/home'),
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFFD4AF37),
+                  foregroundColor: Colors.black87,
+                ),
+                child: const Text('Volver al catálogo'),
+              ),
             ],
           ),
         ),
@@ -173,42 +209,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     const SizedBox(height: 8),
                     Text(
                       'En tu carrito: $qtyInCart / ${product.stock}',
-                      style: TextStyle(color: Colors.grey[700], fontWeight: FontWeight.w500),
+                      style: TextStyle(color: Colors.grey.shade700),
                     ),
                   ],
-                  const SizedBox(height: 28),
-                  const Text(
-                    'Descripción',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    product.descripcion ??
-                        'No hay descripción disponible para este producto.',
-                    style: const TextStyle(fontSize: 16, height: 1.5, color: Colors.black87),
-                  ),
-                  const SizedBox(height: 40),
+                  const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
+                    child: ElevatedButton.icon(
                       onPressed: canAdd ? () => _addToCart(product, cartProvider) : null,
+                      icon: const Icon(Icons.add_shopping_cart),
+                      label: Text(canAdd ? 'Agregar al carrito' : 'Sin stock disponible'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD4AF37),
-                        disabledBackgroundColor: Colors.grey[300],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                      ),
-                      child: Text(
-                        product.stock <= 0
-                            ? 'Producto agotado'
-                            : qtyInCart >= product.stock
-                                ? 'Stock máximo en carrito'
-                                : 'Agregar al carrito',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        foregroundColor: Colors.black87,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => context.canPop() ? context.pop() : context.go('/home'),
+                    child: const Text('← Seguir comprando'),
                   ),
                 ],
               ),

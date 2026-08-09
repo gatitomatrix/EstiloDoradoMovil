@@ -72,6 +72,34 @@ class AuthService {
     }
   }
 
+  /// Google real (idToken) o demo local (sin token de Google Cloud).
+  Future<Map<String, dynamic>> loginWithGoogle({
+    String? idToken,
+    bool demo = false,
+    String? email,
+    String? nombre,
+    String? apellido,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (idToken != null && idToken.isNotEmpty) {
+        body['id_token'] = idToken;
+      } else if (demo) {
+        body['demo'] = true;
+        body['email'] = email ?? 'demo.google@estilodorado.local';
+        body['nombre'] = nombre ?? 'Cliente';
+        body['apellido'] = apellido ?? 'Google Demo';
+      } else {
+        return {'success': false, 'error': 'Falta id_token de Google'};
+      }
+      final response = await _api.post(ApiConfig.google, body);
+      return await _persistSession(response.data);
+    } catch (e) {
+      debugPrint('Error en login Google: $e');
+      return {'success': false, 'error': errorMessage(e)};
+    }
+  }
+
   Future<Map<String, dynamic>?> me() async {
     try {
       final response = await _api.get(ApiConfig.me);
