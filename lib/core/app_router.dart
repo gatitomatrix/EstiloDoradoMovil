@@ -22,6 +22,7 @@ import '../features/orders/pagar_pedido_screen.dart';
 import '../features/orders/views/order_success_screen.dart';
 import '../features/payment/culqi_payment_screen.dart';
 import '../features/account/mi_cuenta_screen.dart';
+import '../features/assistant/assistant_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -74,6 +75,7 @@ class AppRouter {
       GoRoute(path: '/registro', builder: (context, state) => const RegisterScreen()),
       GoRoute(path: '/recuperar', builder: (context, state) => const ForgotPasswordScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
+      GoRoute(path: '/asistente', builder: (context, state) => const AssistantScreen()),
       GoRoute(path: '/mi-cuenta', builder: (context, state) => const MiCuentaScreen()),
       GoRoute(
         path: '/producto/:id',

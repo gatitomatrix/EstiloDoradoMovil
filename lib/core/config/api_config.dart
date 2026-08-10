@@ -29,6 +29,9 @@ class ApiConfig {
   static const String productos = '/productos';
   static const String categorias = '/categorias';
 
+  /// Chatbot / asistente IA (Ollama o Gemini vía Laravel)
+  static const String asistente = '/asistente';
+
   // Geo
   static const String geoSearch = '/geo/search';
   static const String geoReverse = '/geo/reverse';

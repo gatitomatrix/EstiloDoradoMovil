@@ -52,6 +52,11 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         backgroundColor: const Color(0xFFD4AF37),
         actions: [
+          IconButton(
+            tooltip: 'Asistente IA',
+            icon: const Icon(Icons.smart_toy_outlined),
+            onPressed: () => context.push('/asistente'),
+          ),
           Stack(
             children: [
               IconButton(
@@ -310,6 +315,15 @@ class _HomeScreenState extends State<HomeScreen> {
             onTap: () {
               Navigator.pop(context);
               context.go('/home');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.smart_toy_outlined),
+            title: const Text('Asistente IA'),
+            subtitle: const Text('Preguntas sobre productos y pedidos'),
+            onTap: () {
+              Navigator.pop(context);
+              context.push('/asistente');
             },
           ),
           ListTile(
