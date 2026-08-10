@@ -36,8 +36,10 @@ class _AssistantScreenState extends State<AssistantScreen> {
   bool _sending = false;
   List<String> _suggestions = const [
     '¿Qué productos tienen?',
+    'Cerdita tiburón',
     '¿Cómo compro?',
     'Formas de pago',
+    '¿Cuántos productos hay?',
   ];
 
   @override
