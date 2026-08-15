@@ -257,10 +257,8 @@ class CartProvider extends ChangeNotifier {
     if (index < 0) return false;
     final max = _items[index].stockMax < 1 ? 1 : _items[index].stockMax;
     if (cantidad < 1) {
-      _items.removeAt(index);
-      _persist();
-      notifyListeners();
-      return true;
+      // El tacho elimina el producto; − no baja de 1.
+      return false;
     }
     if (cantidad > max) {
       _items[index].cantidad = max;

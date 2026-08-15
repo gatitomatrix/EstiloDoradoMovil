@@ -137,8 +137,16 @@ class _CartScreenState extends State<CartScreen> {
             Column(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.remove_circle_outline),
-                  onPressed: () => cartProvider.updateQuantity(item.id, item.cantidad - 1),
+                  tooltip: item.cantidad <= 1
+                      ? 'Mínimo 1. Usa el tacho para quitarlo'
+                      : 'Quitar una unidad',
+                  icon: Icon(
+                    Icons.remove_circle_outline,
+                    color: item.cantidad <= 1 ? Colors.grey.shade400 : null,
+                  ),
+                  onPressed: item.cantidad <= 1
+                      ? null
+                      : () => cartProvider.updateQuantity(item.id, item.cantidad - 1),
                 ),
                 Text('${item.cantidad}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 IconButton(
