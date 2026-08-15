@@ -61,7 +61,10 @@ class _HomeScreenState extends State<HomeScreen> {
             children: [
               IconButton(
                 icon: const Icon(Icons.shopping_cart),
-                onPressed: () => context.push('/cart'),
+                onPressed: () {
+                  AppSnackBar.hide();
+                  context.push('/cart');
+                },
               ),
               if (cartProvider.items.isNotEmpty)
                 Positioned(
@@ -85,129 +88,135 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
-            child: TextField(
-              controller: _searchCtrl,
-              textInputAction: TextInputAction.search,
-              onSubmitted: _runSearch,
-              decoration: InputDecoration(
-                hintText: 'Buscar productos…',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchCtrl.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchCtrl.clear();
-                          setState(() {});
-                          productProvider.clearSearch();
-                        },
-                      )
-                    : IconButton(
-                        icon: const Icon(Icons.arrow_forward),
-                        onPressed: () => _runSearch(_searchCtrl.text),
-                      ),
-                filled: true,
-                fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE7DAC6)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFFE7DAC6)),
+      body: RefreshIndicator(
+        color: const Color(0xFFD4AF37),
+        onRefresh: () => productProvider.loadProducts(search: productProvider.search),
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            const SliverToBoxAdapter(child: _HeroBanner()),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+                child: TextField(
+                  controller: _searchCtrl,
+                  textInputAction: TextInputAction.search,
+                  onSubmitted: _runSearch,
+                  decoration: InputDecoration(
+                    hintText: 'Buscar productos…',
+                    prefixIcon: const Icon(Icons.search),
+                    suffixIcon: _searchCtrl.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear),
+                            onPressed: () {
+                              _searchCtrl.clear();
+                              setState(() {});
+                              productProvider.clearSearch();
+                            },
+                          )
+                        : IconButton(
+                            icon: const Icon(Icons.arrow_forward),
+                            onPressed: () => _runSearch(_searchCtrl.text),
+                          ),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE7DAC6)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: Color(0xFFE7DAC6)),
+                    ),
+                  ),
+                  onChanged: (_) => setState(() {}),
                 ),
               ),
-              onChanged: (_) => setState(() {}),
             ),
-          ),
-          Expanded(
-            child: RefreshIndicator(
-              onRefresh: () => productProvider.loadProducts(search: productProvider.search),
-              child: productProvider.isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
-                    )
-                  : productProvider.error != null
-                      ? ListView(
-                          children: [
-                            const SizedBox(height: 80),
-                            Center(
-                              child: Padding(
-                                padding: const EdgeInsets.all(24),
-                                child: Column(
-                                  children: [
-                                    const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
-                                    const SizedBox(height: 12),
-                                    Text(
-                                      'No se pudieron cargar productos.\nRevisa Laravel en local.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(color: Colors.grey.shade700),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    FilledButton(
-                                      onPressed: () => productProvider.loadProducts(),
-                                      style: FilledButton.styleFrom(
-                                        backgroundColor: const Color(0xFFD4AF37),
-                                        foregroundColor: Colors.black87,
-                                      ),
-                                      child: const Text('Reintentar'),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ],
-                        )
-                      : productProvider.products.isEmpty
-                          ? ListView(
-                              children: [
-                                const SizedBox(height: 60),
-                                Icon(Icons.search_off, size: 56, color: Colors.grey.shade400),
-                                const SizedBox(height: 12),
-                                Text(
-                                  productProvider.search.isEmpty
-                                      ? 'No hay productos disponibles'
-                                      : 'Sin resultados para “${productProvider.search}”',
-                                  textAlign: TextAlign.center,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                if (productProvider.search.isNotEmpty)
-                                  Center(
-                                    child: TextButton(
-                                      onPressed: () {
-                                        _searchCtrl.clear();
-                                        productProvider.clearSearch();
-                                      },
-                                      child: const Text('Limpiar búsqueda'),
-                                    ),
-                                  ),
-                              ],
-                            )
-                          : GridView.builder(
-                              padding: const EdgeInsets.all(16),
-                              gridDelegate:
-                                  const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 0.72,
-                                crossAxisSpacing: 16,
-                                mainAxisSpacing: 16,
-                              ),
-                              itemCount: productProvider.products.length,
-                              itemBuilder: (context, index) {
-                                final product = productProvider.products[index];
-                                return _buildProductCard(context, product);
-                              },
-                            ),
-            ),
-          ),
-        ],
+            if (productProvider.isLoading)
+              const SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+                ),
+              )
+            else if (productProvider.error != null)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
+                        const SizedBox(height: 12),
+                        Text(
+                          'No se pudieron cargar productos.\nRevisa Laravel en local.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: Colors.grey.shade700),
+                        ),
+                        const SizedBox(height: 12),
+                        FilledButton(
+                          onPressed: () => productProvider.loadProducts(),
+                          style: FilledButton.styleFrom(
+                            backgroundColor: const Color(0xFFD4AF37),
+                            foregroundColor: Colors.black87,
+                          ),
+                          child: const Text('Reintentar'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else if (productProvider.products.isEmpty)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.search_off, size: 56, color: Colors.grey.shade400),
+                    const SizedBox(height: 12),
+                    Text(
+                      productProvider.search.isEmpty
+                          ? 'No hay productos disponibles'
+                          : 'Sin resultados para “${productProvider.search}”',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    ),
+                    if (productProvider.search.isNotEmpty)
+                      TextButton(
+                        onPressed: () {
+                          _searchCtrl.clear();
+                          productProvider.clearSearch();
+                        },
+                        child: const Text('Limpiar búsqueda'),
+                      ),
+                  ],
+                ),
+              )
+            else
+              SliverPadding(
+                padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    childAspectRatio: 0.72,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                  ),
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final product = productProvider.products[index];
+                      return _buildProductCard(context, product);
+                    },
+                    childCount: productProvider.products.length,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -379,9 +388,91 @@ class _HomeScreenState extends State<HomeScreen> {
               title: const Text('Iniciar sesión'),
               onTap: () {
                 Navigator.pop(context);
+                auth.clearNextRouteAfterLogin();
                 context.push('/login');
               },
             ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Cabecera de marca (~30% de la pantalla): banner + logo.
+class _HeroBanner extends StatelessWidget {
+  const _HeroBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    final h = MediaQuery.sizeOf(context).height;
+    final bannerH = (h * 0.30).clamp(168.0, 248.0);
+
+    return SizedBox(
+      height: bannerH,
+      width: double.infinity,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Image.asset(
+            'assets/banners/portada1.png',
+            fit: BoxFit.cover,
+            errorBuilder: (_, __, ___) => Container(
+              color: const Color(0xFF2D2418),
+            ),
+          ),
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [
+                  Color(0x66000000),
+                  Color(0x99000000),
+                  Color(0xCC1A140C),
+                ],
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.asset(
+                    'assets/images/logo_empresa.jpeg',
+                    height: bannerH * 0.42,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) => const Icon(
+                      Icons.storefront,
+                      size: 64,
+                      color: Color(0xFFD4AF37),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                const Text(
+                  'Estilo Dorado',
+                  style: TextStyle(
+                    color: Color(0xFFD4AF37),
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Regalos y detalles que enamoran',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

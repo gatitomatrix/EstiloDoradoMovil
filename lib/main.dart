@@ -87,6 +87,7 @@ class _EstiloDoradoAppState extends State<EstiloDoradoApp> {
       title: 'Estilo Dorado',
       theme: AppTheme.lightTheme,
       routerConfig: AppRouter.router,
+      scaffoldMessengerKey: AppRouter.scaffoldMessengerKey,
       debugShowCheckedModeBanner: false,
     );
   }

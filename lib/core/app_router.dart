@@ -1,5 +1,6 @@
 // lib/core/app_router.dart
 // App móvil = cliente (tienda). El panel admin vive en la web (Angular), según alcance del proyecto.
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
@@ -25,6 +26,22 @@ import '../features/account/mi_cuenta_screen.dart';
 import '../features/assistant/assistant_screen.dart';
 
 class AppRouter {
+  static final GlobalKey<ScaffoldMessengerState> scaffoldMessengerKey =
+      GlobalKey<ScaffoldMessengerState>();
+
+  /// Tras login: tienda por defecto. Solo se retoma checkout/compras/carrito.
+  static String resolvePostLoginRoute(String? next) {
+    if (next == null || next.isEmpty) return '/home';
+    if (next.startsWith('/admin') ||
+        next == '/login' ||
+        next == '/registro' ||
+        next == '/recuperar' ||
+        next == '/mi-cuenta') {
+      return '/home';
+    }
+    return next;
+  }
+
   static final GoRouter router = GoRouter(
     initialLocation: '/home',
     redirect: (context, state) {
@@ -58,14 +75,8 @@ class AppRouter {
 
       if (loc == '/login' && isLoggedIn) {
         final nextRoute = authProvider.nextRouteAfterLogin;
-        if (nextRoute != null) {
-          authProvider.clearNextRouteAfterLogin();
-          // No redirigir a admin si quedó en memoria de sesiones viejas
-          if (nextRoute.startsWith('/admin')) {
-            return '/home';
-          }
-          return nextRoute;
-        }
+        authProvider.clearNextRouteAfterLogin();
+        return resolvePostLoginRoute(nextRoute);
       }
 
       return null;

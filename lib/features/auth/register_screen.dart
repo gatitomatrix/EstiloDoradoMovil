@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/app_router.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -84,13 +85,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      final next = auth.nextRouteAfterLogin;
+      final next = AppRouter.resolvePostLoginRoute(auth.nextRouteAfterLogin);
       auth.clearNextRouteAfterLogin();
-      if (next != null && !next.startsWith('/admin')) {
-        context.go(next);
-      } else {
-        context.go('/home');
-      }
+      context.go(next);
     } else {
       setState(() => _isLoading = false);
       ScaffoldMessenger.of(context).showSnackBar(

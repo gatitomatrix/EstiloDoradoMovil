@@ -7,6 +7,7 @@ import '../../core/models/product_model.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/product_provider.dart';
 import '../../core/utils/app_snackbar.dart';
+import '../../core/app_router.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
@@ -75,7 +76,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     switch (result) {
       case CartAddResult.added:
         msg = '${product.nombre} agregado al carrito';
-        AppSnackBar.ok(context, msg, actionLabel: 'Ver carrito', onAction: () => context.push('/cart'));
+        AppSnackBar.ok(
+          context,
+          msg,
+          actionLabel: 'Ver carrito',
+          onAction: () => AppRouter.router.push('/cart'),
+        );
         return;
       case CartAddResult.increased:
         msg = 'Cantidad actualizada (máx. ${product.stock})';

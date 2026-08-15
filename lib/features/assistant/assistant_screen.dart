@@ -6,6 +6,7 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/assistant_service.dart';
 import '../../core/utils/app_snackbar.dart';
+import '../../core/app_router.dart';
 
 const _gold = Color(0xFFD4AF37);
 const _cream = Color(0xFFF8F1E9);
@@ -223,7 +224,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
         context,
         reply,
         actionLabel: 'Ver carrito',
-        onAction: () => context.push('/cart'),
+        onAction: () => AppRouter.router.push('/cart'),
       );
     } else {
       AppSnackBar.err(context, reply);

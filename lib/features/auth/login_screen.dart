@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/utils/app_snackbar.dart';
+import '../../core/app_router.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,13 +38,9 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!mounted) return;
     AppSnackBar.ok(context, 'Sesión iniciada');
 
-    final nextRoute = authProvider.nextRouteAfterLogin;
+    final nextRoute = AppRouter.resolvePostLoginRoute(authProvider.nextRouteAfterLogin);
     authProvider.clearNextRouteAfterLogin();
-    if (nextRoute != null && !nextRoute.startsWith('/admin')) {
-      context.go(nextRoute);
-    } else {
-      context.go('/home');
-    }
+    context.go(nextRoute);
   }
 
   Future<void> _login() async {
