@@ -9,6 +9,7 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/providers/product_provider.dart';
 import '../../core/models/product_model.dart';
 import '../../core/utils/app_snackbar.dart';
+import '../../core/app_router.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -17,25 +18,71 @@ class HomeScreen extends StatefulWidget {
   State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _HomeScreenState extends State<HomeScreen> {
+class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final _searchCtrl = TextEditingController();
+  String _lastLoc = '/home';
+  DateTime? _lastCatalogReset;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Provider.of<ProductProvider>(context, listen: false).loadProducts();
+      _showFullCatalog();
+      AppRouter.router.routerDelegate.addListener(_onRouteChanged);
     });
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      AppRouter.routeObserver.subscribe(this, route);
+    }
+  }
+
+  @override
   void dispose() {
+    AppRouter.router.routerDelegate.removeListener(_onRouteChanged);
+    AppRouter.routeObserver.unsubscribe(this);
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  /// Al volver de ficha, carrito o chat: catálogo completo otra vez.
+  @override
+  void didPopNext() {
+    _showFullCatalog();
+  }
+
+  void _onRouteChanged() {
+    final loc = AppRouter.router.routerDelegate.currentConfiguration.uri.path;
+    if (loc == '/home' && _lastLoc != '/home') {
+      _showFullCatalog();
+    }
+    _lastLoc = loc;
+  }
+
+  void _showFullCatalog() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (_lastCatalogReset != null &&
+        now.difference(_lastCatalogReset!) < const Duration(milliseconds: 500)) {
+      return;
+    }
+    _lastCatalogReset = now;
+    _searchCtrl.clear();
+    Provider.of<ProductProvider>(context, listen: false).clearSearch();
+    setState(() {});
+  }
+
   Future<void> _runSearch(String q) async {
-    await Provider.of<ProductProvider>(context, listen: false).loadProducts(search: q.trim());
+    final query = q.trim();
+    if (query.isEmpty) {
+      _showFullCatalog();
+      return;
+    }
+    await Provider.of<ProductProvider>(context, listen: false).loadProducts(search: query);
   }
 
   @override
@@ -133,6 +180,26 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
+            if (productProvider.search.isNotEmpty)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Resultados de “${productProvider.search}”',
+                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _showFullCatalog,
+                        child: const Text('Ver todo'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             if (productProvider.isLoading)
               const SliverFillRemaining(
                 hasScrollBody: false,
@@ -158,7 +225,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                         const SizedBox(height: 12),
                         FilledButton(
-                          onPressed: () => productProvider.loadProducts(),
+                          onPressed: () => productProvider.loadProducts(resetSearch: true),
                           style: FilledButton.styleFrom(
                             backgroundColor: const Color(0xFFD4AF37),
                             foregroundColor: Colors.black87,
@@ -323,6 +390,7 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('Inicio'),
             onTap: () {
               Navigator.pop(context);
+              _showFullCatalog();
               context.go('/home');
             },
           ),

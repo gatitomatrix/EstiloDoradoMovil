@@ -42,8 +42,12 @@ class AppRouter {
     return next;
   }
 
+  static final RouteObserver<ModalRoute<void>> routeObserver =
+      RouteObserver<ModalRoute<void>>();
+
   static final GoRouter router = GoRouter(
     initialLocation: '/home',
+    observers: [routeObserver],
     redirect: (context, state) {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final isLoggedIn = authProvider.isLoggedIn;

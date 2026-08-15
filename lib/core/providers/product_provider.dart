@@ -16,8 +16,12 @@ class ProductProvider extends ChangeNotifier {
   String? get error => _error;
   String get search => _search;
 
-  Future<void> loadProducts({String? search}) async {
-    if (search != null) _search = search;
+  Future<void> loadProducts({String? search, bool resetSearch = false}) async {
+    if (resetSearch) {
+      _search = '';
+    } else if (search != null) {
+      _search = search;
+    }
     _isLoading = true;
     _error = null;
     notifyListeners();
