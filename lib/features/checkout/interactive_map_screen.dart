@@ -276,7 +276,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                         onPressed: _confirm,
                         icon: const Icon(Icons.check),
                         label: const Text(
-                          'Ususar esta ubicación',
+                          'Usar esta ubicación',
                           style: TextStyle(fontWeight: FontWeight.bold),
                         ),
                         style: ElevatedButton.styleFrom(
