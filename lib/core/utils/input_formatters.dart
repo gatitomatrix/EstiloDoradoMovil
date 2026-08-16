@@ -97,4 +97,9 @@ class AppInputFormatters {
   static List<TextInputFormatter> get dni => digitsMax(8);
   static List<TextInputFormatter> get ruc => digitsMax(11);
   static List<TextInputFormatter> get cvv => digitsMax(3);
+  static List<TextInputFormatter> get personName => [
+        FilteringTextInputFormatter.allow(
+          RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s']"),
+        ),
+      ];
 }

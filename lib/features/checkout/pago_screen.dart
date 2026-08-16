@@ -302,8 +302,11 @@ class _PagoScreenState extends State<PagoScreen> {
                     if (tipo == 'BO') ...[
                       TextField(
                         controller: _bolNombres,
+                        textCapitalization: TextCapitalization.words,
+                        inputFormatters: AppInputFormatters.personName,
                         decoration: const InputDecoration(
                           labelText: 'Nombres y apellidos',
+                          hintText: 'Solo letras',
                           border: OutlineInputBorder(),
                         ),
                       ),

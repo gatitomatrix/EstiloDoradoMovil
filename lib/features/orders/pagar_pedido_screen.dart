@@ -340,8 +340,10 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
             TextField(
               controller: _bolNombres,
               textCapitalization: TextCapitalization.words,
+              inputFormatters: AppInputFormatters.personName,
               decoration: const InputDecoration(
                 labelText: 'Nombres y apellidos',
+                hintText: 'Solo letras',
                 border: OutlineInputBorder(),
               ),
             ),
