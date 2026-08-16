@@ -221,7 +221,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: const Text('¿No tienes cuenta? Regístrate'),
                 ),
                 TextButton(
-                  onPressed: () => context.go('/home'),
+                  onPressed: () {
+                    Provider.of<AuthProvider>(context, listen: false)
+                        .clearNextRouteAfterLogin();
+                    context.go('/home');
+                  },
                   child: const Text('Continuar sin iniciar sesión'),
                 ),
               ],
