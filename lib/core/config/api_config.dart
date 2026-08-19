@@ -15,6 +15,12 @@ class ApiConfig {
     defaultValue: 'pk_test_tu_clave_publica',
   );
 
+  /// Client ID OAuth tipo Web (el mismo que Angular). Vacío = demo local.
+  static const String googleWebClientId = String.fromEnvironment(
+    'GOOGLE_WEB_CLIENT_ID',
+    defaultValue: '',
+  );
+
   // Auth cliente
   static const String login = '/auth/login';
   static const String register = '/auth/register';

@@ -7,6 +7,9 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/utils/input_formatters.dart';
 import '../../core/app_router.dart';
+import '../../core/config/api_config.dart';
+import '../../core/services/google_sign_in_helper.dart';
+import '../../core/utils/app_snackbar.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -29,6 +32,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
   bool _isLoading = false;
+  bool _googleLoading = false;
 
   @override
   void dispose() {
@@ -98,6 +102,44 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
     }
+  }
+
+  Future<void> _registerGoogle() async {
+    setState(() => _googleLoading = true);
+    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final cart = Provider.of<CartProvider>(context, listen: false);
+    var success = false;
+    try {
+      if (ApiConfig.googleWebClientId.isNotEmpty) {
+        final t = await GoogleSignInHelper.signIn();
+        success = await auth.loginWithGoogle(
+          idToken: t.idToken,
+          accessToken: t.accessToken,
+        );
+      } else {
+        success = await auth.loginWithGoogle(demo: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        AppSnackBar.err(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+      return;
+    }
+    if (!mounted) return;
+    if (success) {
+      final uid = auth.user?['id_cliente'];
+      final id = uid is int ? uid : int.tryParse(uid?.toString() ?? '');
+      await cart.bindUser(id);
+      if (!mounted) return;
+      setState(() => _googleLoading = false);
+      final next = AppRouter.resolvePostLoginRoute(auth.nextRouteAfterLogin);
+      auth.clearNextRouteAfterLogin();
+      context.go(next);
+      return;
+    }
+    setState(() => _googleLoading = false);
+    AppSnackBar.err(context, auth.lastError ?? 'No se pudo entrar con Google');
   }
 
   @override
@@ -281,7 +323,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
-                    onPressed: _isLoading ? null : _register,
+                    onPressed: (_isLoading || _googleLoading) ? null : _register,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: _gold,
                       foregroundColor: Colors.black87,
@@ -302,6 +344,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton.icon(
+                    onPressed: (_isLoading || _googleLoading) ? null : _registerGoogle,
+                    icon: const Text(
+                      'G',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w900,
+                        color: Color(0xFF4285F4),
+                        fontSize: 18,
+                      ),
+                    ),
+                    label: Text(
+                      _googleLoading ? 'Conectando…' : 'Crear cuenta con Gmail',
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.black87,
+                      side: const BorderSide(color: Color(0xFFE7DAC6)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 12),

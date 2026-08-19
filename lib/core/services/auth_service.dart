@@ -75,6 +75,7 @@ class AuthService {
   /// Google real (idToken) o demo local (sin token de Google Cloud).
   Future<Map<String, dynamic>> loginWithGoogle({
     String? idToken,
+    String? accessToken,
     bool demo = false,
     String? email,
     String? nombre,
@@ -84,13 +85,15 @@ class AuthService {
       final body = <String, dynamic>{};
       if (idToken != null && idToken.isNotEmpty) {
         body['id_token'] = idToken;
+      } else if (accessToken != null && accessToken.isNotEmpty) {
+        body['access_token'] = accessToken;
       } else if (demo) {
         body['demo'] = true;
         body['email'] = email ?? 'demo.google@estilodorado.local';
         body['nombre'] = nombre ?? 'Cliente';
         body['apellido'] = apellido ?? 'Google Demo';
       } else {
-        return {'success': false, 'error': 'Falta id_token de Google'};
+        return {'success': false, 'error': 'Falta token de Google'};
       }
       final response = await _api.post(ApiConfig.google, body);
       return await _persistSession(response.data);

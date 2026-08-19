@@ -89,12 +89,14 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> loginWithGoogle({
     String? idToken,
-    bool demo = true,
+    String? accessToken,
+    bool demo = false,
   }) async {
     _lastError = null;
     final response = await _authService.loginWithGoogle(
       idToken: idToken,
-      demo: demo && (idToken == null || idToken.isEmpty),
+      accessToken: accessToken,
+      demo: demo && (idToken == null || idToken.isEmpty) && (accessToken == null || accessToken.isEmpty),
     );
 
     if (response['success'] == true) {

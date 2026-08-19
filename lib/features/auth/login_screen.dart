@@ -6,6 +6,8 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
+import '../../core/config/api_config.dart';
+import '../../core/services/google_sign_in_helper.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -64,11 +66,28 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  /// Demo local de Google (sin Client ID). Para Google real: idToken + GOOGLE_CLIENT_ID en Laravel.
-  Future<void> _loginGoogleDemo() async {
+  /// Gmail real si hay Client ID; si no, demo local.
+  Future<void> _loginGoogle() async {
     setState(() => _googleLoading = true);
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final success = await authProvider.loginWithGoogle(demo: true);
+    var success = false;
+    try {
+      if (ApiConfig.googleWebClientId.isNotEmpty) {
+        final t = await GoogleSignInHelper.signIn();
+        success = await authProvider.loginWithGoogle(
+          idToken: t.idToken,
+          accessToken: t.accessToken,
+        );
+      } else {
+        success = await authProvider.loginWithGoogle(demo: true);
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _googleLoading = false);
+        AppSnackBar.err(context, e.toString().replaceFirst('Exception: ', ''));
+      }
+      return;
+    }
     if (!mounted) return;
     setState(() => _googleLoading = false);
     if (success) {
@@ -183,7 +202,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: double.infinity,
                   height: 52,
                   child: OutlinedButton.icon(
-                    onPressed: _isLoading || _googleLoading ? null : _loginGoogleDemo,
+                    onPressed: _isLoading || _googleLoading ? null : _loginGoogle,
                     icon: const Text(
                       'G',
                       style: TextStyle(
@@ -206,9 +225,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  'En local usa modo demo (sin Client ID de Google).',
-                  style: TextStyle(fontSize: 12, color: Colors.grey),
+                Text(
+                  ApiConfig.googleWebClientId.isEmpty
+                      ? 'Sin Client ID: entra en modo demo. Para Gmail, pega GOOGLE_WEB_CLIENT_ID.'
+                      : 'Se abrirá tu cuenta de Google (internet).',
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
                   textAlign: TextAlign.center,
                 ),
                 TextButton(
