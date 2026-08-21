@@ -18,7 +18,7 @@ class ApiConfig {
   /// Client ID OAuth tipo Web (el mismo que Angular). Vacío = demo local.
   static const String googleWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '',
+    defaultValue: '777778875504-2v87ku2g09ihl0na65ge110hmqm6r2nh.apps.googleusercontent.com',
   );
 
   // Auth cliente
