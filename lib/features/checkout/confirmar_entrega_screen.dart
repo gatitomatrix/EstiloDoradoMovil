@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
+import '../../core/utils/tarifa_envio.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -16,6 +17,10 @@ class ConfirmarEntregaScreen extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final checkout = context.watch<CheckoutProvider>();
     final subtotal = cart.subtotal;
+    final expressTarifa = TarifaEnvio.estimar(
+      departamento: checkout.address?.departamento,
+      provincia: checkout.address?.provincia,
+    );
 
     // No redirigir en post-frame de forma agresiva (puede pisar otras pantallas).
     // Si no hay modo, se muestra CTA a Entrega.
@@ -99,12 +104,12 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                           'Envío a dirección',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: const Text(
-                          'Envío a tu dirección de 1 a 2 días según ubicación y horarios de reparto.',
+                        subtitle: Text(
+                          expressTarifa.etiqueta,
                         ),
-                        secondary: const Text(
-                          'S/ 20',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                        secondary: Text(
+                          'S/ ${expressTarifa.costo.toStringAsFixed(0)}',
+                          style: const TextStyle(fontWeight: FontWeight.bold, color: _gold),
                         ),
                         onChanged: (_) {
                           if (checkout.address == null ||

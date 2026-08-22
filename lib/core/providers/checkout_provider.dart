@@ -1,6 +1,7 @@
 // lib/core/providers/checkout_provider.dart
 import 'package:flutter/foundation.dart';
 import '../models/checkout_models.dart';
+import '../utils/tarifa_envio.dart';
 
 class CheckoutProvider extends ChangeNotifier {
   DeliveryMode mode = DeliveryMode.none;
@@ -27,10 +28,14 @@ class CheckoutProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setExpress(DeliveryAddress addr, {double fee = 20, double discount = 5}) {
+  void setExpress(DeliveryAddress addr, {double? fee, double discount = 0}) {
     mode = DeliveryMode.express;
     address = addr;
-    this.fee = fee;
+    this.fee = fee ??
+        TarifaEnvio.estimar(
+          departamento: addr.departamento,
+          provincia: addr.provincia,
+        ).costo;
     this.discount = discount;
     notifyListeners();
   }
@@ -48,8 +53,14 @@ class CheckoutProvider extends ChangeNotifier {
       discount = 0;
       address ??= DeliveryAddress.storePickup();
     } else if (m == DeliveryMode.express) {
-      fee = 20;
-      discount = 5;
+      final a = address;
+      fee = a == null
+          ? 25
+          : TarifaEnvio.estimar(
+              departamento: a.departamento,
+              provincia: a.provincia,
+            ).costo;
+      discount = 0;
     }
     notifyListeners();
   }
