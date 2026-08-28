@@ -137,9 +137,6 @@ class _AssistantScreenState extends State<AssistantScreen> {
             pendingAdd: pending,
           ),
         );
-        if (res.suggestions.isNotEmpty) {
-          _suggestions = res.suggestions;
-        }
         _sending = false;
       });
     } catch (e) {
@@ -283,25 +280,6 @@ class _AssistantScreenState extends State<AssistantScreen> {
               },
             ),
           ),
-          if (_suggestions.isNotEmpty)
-            SizedBox(
-              height: 44,
-              child: ListView.separated(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                itemCount: _suggestions.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 8),
-                itemBuilder: (context, i) {
-                  final s = _suggestions[i];
-                  return ActionChip(
-                    label: Text(s, style: const TextStyle(fontSize: 12)),
-                    onPressed: _sending ? null : () => _send(s),
-                    backgroundColor: Colors.white,
-                    side: const BorderSide(color: Color(0xFFE7DAC6)),
-                  );
-                },
-              ),
-            ),
           SafeArea(
             top: false,
             child: Padding(
