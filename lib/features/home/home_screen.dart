@@ -100,7 +100,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         backgroundColor: const Color(0xFFD4AF37),
         actions: [
           IconButton(
-            tooltip: 'Asistente IA',
+            tooltip: 'Dori, tu asistente',
             icon: const Icon(Icons.smart_toy_outlined),
             onPressed: () => context.push('/asistente'),
           ),
@@ -396,8 +396,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           ),
           ListTile(
             leading: const Icon(Icons.smart_toy_outlined),
-            title: const Text('Asistente IA'),
-            subtitle: const Text('Preguntas sobre productos y pedidos'),
+            title: const Text('Dori'),
+            subtitle: const Text('Hola, soy Dori. ¿Buscas un regalo?'),
             onTap: () {
               Navigator.pop(context);
               context.push('/asistente');

@@ -61,9 +61,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
   List<Map<String, dynamic>> _offered = [];
   bool _sending = false;
   List<String> _suggestions = const [
+    'Regalo de cumpleaños',
     '¿Qué productos tienen?',
     'Cerdita tiburón',
-    'Quiero la cerdita',
     '¿Cómo compro?',
   ];
 
@@ -73,7 +73,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     _msgs.add(
       _ChatMsg(
         text:
-            '¡Hola! Soy el asistente de Estilo Dorado. Pregúntame por productos y te mostraré opciones. Puedes tocar Agregar o escribir «quiero la cerdita» si ya te la ofrecí.',
+            'Hola, soy Dori, tu asistente de Estilo Dorado. Dime qué buscas o para quién es el regalo (cumpleaños, papá, novia…) y te muestro opciones del catálogo.',
         fromUser: false,
         driver: 'welcome',
       ),
@@ -236,7 +236,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     return Scaffold(
       backgroundColor: _cream,
       appBar: AppBar(
-        title: const Text('Asistente Estilo Dorado'),
+        title: const Text('Dori'),
         backgroundColor: _gold,
         foregroundColor: Colors.black87,
         leading: IconButton(
@@ -273,7 +273,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                             child: CircularProgressIndicator(strokeWidth: 2, color: _gold),
                           ),
                           SizedBox(width: 10),
-                          Text('Pensando… (Ollama puede tardar unos segundos)'),
+                          Text('Dori está escribiendo…'),
                         ],
                       ),
                     ),
@@ -316,7 +316,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                       textInputAction: TextInputAction.send,
                       onSubmitted: (_) => _send(),
                       decoration: InputDecoration(
-                        hintText: 'Ej. peluches  ·  quiero la cerdita',
+                        hintText: 'Ej. regalo de cumpleaños',
                         filled: true,
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
