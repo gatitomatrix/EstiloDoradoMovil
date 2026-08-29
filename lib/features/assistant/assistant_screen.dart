@@ -7,6 +7,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/assistant_service.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const _gold = Color(0xFFD4AF37);
 const _cream = Color(0xFFF8F1E9);
@@ -35,6 +36,8 @@ class _ChatMsg {
   final List<Map<String, dynamic>> products;
   final String? driver;
   final _PendingAdd? pendingAdd;
+  final String? whatsappUrl;
+  final String? whatsappLabel;
 
   _ChatMsg({
     required this.text,
@@ -42,6 +45,8 @@ class _ChatMsg {
     this.products = const [],
     this.driver,
     this.pendingAdd,
+    this.whatsappUrl,
+    this.whatsappLabel,
   });
 }
 
@@ -112,6 +117,12 @@ class _AssistantScreenState extends State<AssistantScreen> {
       if (!mounted) return;
 
       _PendingAdd? pending;
+      String? waUrl;
+      String? waLabel;
+      if (res.action?.type == 'whatsapp' && (res.action?.url ?? '').isNotEmpty) {
+        waUrl = res.action!.url;
+        waLabel = res.action!.label ?? 'Escribir por WhatsApp';
+      }
       if (res.action?.type == 'confirm_add' && res.action?.id != null) {
         final a = res.action!;
         pending = _PendingAdd(
@@ -135,6 +146,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
             products: res.products,
             driver: res.driver,
             pendingAdd: pending,
+            whatsappUrl: waUrl,
+            whatsappLabel: waLabel,
           ),
         );
         _sending = false;
@@ -329,6 +342,13 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
+  Future<void> _openWhatsApp(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) AppSnackBar.err(context, 'No se pudo abrir WhatsApp');
+    }
+  }
+
   Widget _bubble(_ChatMsg m) {
     final align = m.fromUser ? Alignment.centerRight : Alignment.centerLeft;
     final bg = m.fromUser ? _gold : Colors.white;
@@ -366,6 +386,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
             if (m.products.isNotEmpty) ...[
               const SizedBox(height: 8),
               ...m.products.take(6).map(_productCard),
+            ],
+            if (m.whatsappUrl != null) ...[
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => _openWhatsApp(m.whatsappUrl!),
+                style: FilledButton.styleFrom(
+                  backgroundColor: _gold,
+                  foregroundColor: Colors.black87,
+                ),
+                child: Text(m.whatsappLabel ?? 'Escribir por WhatsApp'),
+              ),
             ],
             if (m.pendingAdd != null) ...[
               const SizedBox(height: 8),

@@ -11,6 +11,8 @@ class AssistantAction {
   final double? precio;
   final int? stock;
   final String? imagenUrl;
+  final String? url;
+  final String? label;
 
   AssistantAction({
     required this.type,
@@ -20,6 +22,8 @@ class AssistantAction {
     this.precio,
     this.stock,
     this.imagenUrl,
+    this.url,
+    this.label,
   });
 
   factory AssistantAction.fromJson(Map<String, dynamic> json) {
@@ -31,6 +35,8 @@ class AssistantAction {
       precio: double.tryParse(json['precio']?.toString() ?? ''),
       stock: int.tryParse(json['stock']?.toString() ?? ''),
       imagenUrl: json['imagen_url']?.toString(),
+      url: json['url']?.toString(),
+      label: json['label']?.toString(),
     );
   }
 }
