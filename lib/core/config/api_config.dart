@@ -21,6 +21,11 @@ class ApiConfig {
     defaultValue: '777778875504-2v87ku2g09ihl0na65ge110hmqm6r2nh.apps.googleusercontent.com',
   );
 
+  static const String whatsappNumber = String.fromEnvironment(
+    'WHATSAPP',
+    defaultValue: '51916464315',
+  );
+
   // Auth cliente
   static const String login = '/auth/login';
   static const String register = '/auth/register';

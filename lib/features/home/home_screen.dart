@@ -10,6 +10,7 @@ import '../../core/providers/product_provider.dart';
 import '../../core/models/product_model.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
+import '../../core/utils/whatsapp.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -103,6 +104,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             tooltip: 'Dori, tu asistente',
             icon: const Icon(Icons.smart_toy_outlined),
             onPressed: () => context.push('/asistente'),
+          ),
+          IconButton(
+            tooltip: 'WhatsApp',
+            icon: const Icon(Icons.chat, color: Color(0xFF128C7E)),
+            onPressed: () async {
+              final ok = await Whatsapp.open('Hola, soy cliente de Estilo Dorado.');
+              if (!ok && context.mounted) {
+                AppSnackBar.err(context, 'No se pudo abrir WhatsApp');
+              }
+            },
           ),
           Stack(
             children: [
@@ -401,6 +412,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             onTap: () {
               Navigator.pop(context);
               context.push('/asistente');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.chat, color: Color(0xFF25D366)),
+            title: const Text('WhatsApp'),
+            subtitle: const Text('Hablar con la tienda'),
+            onTap: () async {
+              Navigator.pop(context);
+              final ok = await Whatsapp.open('Hola, soy cliente de Estilo Dorado.');
+              if (!ok && context.mounted) {
+                AppSnackBar.err(context, 'No se pudo abrir WhatsApp');
+              }
             },
           ),
           ListTile(

@@ -8,6 +8,7 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/providers/product_provider.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
+import '../../core/utils/whatsapp.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
@@ -229,6 +230,27 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                         backgroundColor: const Color(0xFFD4AF37),
                         foregroundColor: Colors.black87,
                         padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      onPressed: () async {
+                        final ok = await Whatsapp.open(
+                          'Hola, quiero consultar por: ${product.nombre}',
+                        );
+                        if (!ok && context.mounted) {
+                          AppSnackBar.err(context, 'No se pudo abrir WhatsApp');
+                        }
+                      },
+                      icon: const Icon(Icons.chat, color: Color(0xFF25D366)),
+                      label: const Text('Consultar por WhatsApp'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFF128C7E),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: const BorderSide(color: Color(0xFF25D366)),
                       ),
                     ),
                   ),
