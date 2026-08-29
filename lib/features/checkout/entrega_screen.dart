@@ -479,7 +479,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                 inputFormatters: [
                                   // Número de puerta puede ser "123-A"; permite dígitos y guión/letras cortas
                                   FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9A-Za-z\-/]'),
+                                    RegExp(r'[0-9A-Za-záéíóúÁÉÍÓÚñÑ\-/]'),
                                   ),
                                   LengthLimitingTextInputFormatter(12),
                                 ],

@@ -137,9 +137,7 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                         prefixIcon: Icon(Icons.person_outline),
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]'),
-                        ),
+                        ...AppInputFormatters.personName,
                       ],
                       validator: (v) {
                         if (v == null || v.trim().isEmpty) return 'Ingrese su nombre';
@@ -156,9 +154,7 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                         prefixIcon: Icon(Icons.person_outline),
                       ),
                       inputFormatters: [
-                        FilteringTextInputFormatter.allow(
-                          RegExp(r'[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]'),
-                        ),
+                        ...AppInputFormatters.personName,
                       ],
                     ),
                     const SizedBox(height: 16),

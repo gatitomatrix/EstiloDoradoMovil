@@ -16,6 +16,31 @@ class DigitsOnlyFormatter extends TextInputFormatter {
   }
 }
 
+/// Nombre: letras (incluye ñ, tildes). No corta el IME del teclado español
+/// (n + virgulilla → ñ) ni los diacríticos combinados.
+class PersonNameFormatter extends TextInputFormatter {
+  static final _illegal = RegExp(
+    r"[^a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s'\-\u0300-\u036f]",
+    unicode: true,
+  );
+
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    if (newValue.composing.isValid && !newValue.composing.isCollapsed) {
+      return newValue;
+    }
+    final filtered = newValue.text.replaceAll(_illegal, '');
+    if (filtered == newValue.text) return newValue;
+    return TextEditingValue(
+      text: filtered,
+      selection: TextSelection.collapsed(offset: filtered.length),
+    );
+  }
+}
+
 /// Número de tarjeta con espacios cada 4 dígitos (máx 16 dígitos).
 class CardNumberFormatter extends TextInputFormatter {
   @override
@@ -80,26 +105,21 @@ class YapePhoneFormatter extends TextInputFormatter {
   }
 }
 
-/// Atajos comunes
 final digitsOnly = DigitsOnlyFormatter();
 final cardNumberFormatter = CardNumberFormatter();
 final cardExpiryFormatter = CardExpiryFormatter();
 final yapePhoneFormatter = YapePhoneFormatter();
+final personNameFormatter = PersonNameFormatter();
 
 List<TextInputFormatter> digitsMax(int n) => [
       DigitsOnlyFormatter(),
       LengthLimitingTextInputFormatter(n),
     ];
 
-/// Helpers de nombre estático (pantallas de auth / formularios)
 class AppInputFormatters {
   static List<TextInputFormatter> get phonePe => digitsMax(9);
   static List<TextInputFormatter> get dni => digitsMax(8);
   static List<TextInputFormatter> get ruc => digitsMax(11);
   static List<TextInputFormatter> get cvv => digitsMax(3);
-  static List<TextInputFormatter> get personName => [
-        FilteringTextInputFormatter.allow(
-          RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s']"),
-        ),
-      ];
+  static List<TextInputFormatter> get personName => [personNameFormatter];
 }

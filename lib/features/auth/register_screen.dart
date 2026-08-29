@@ -182,11 +182,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.person_outline),
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s']"),
-                    ),
-                  ],
+                  inputFormatters: AppInputFormatters.personName,
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
                       return 'Ingrese su nombre';
@@ -207,11 +203,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     border: OutlineInputBorder(),
                     prefixIcon: Icon(Icons.badge_outlined),
                   ),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.allow(
-                      RegExp(r"[a-zA-ZáéíóúÁÉÍÓÚñÑüÜ\s']"),
-                    ),
-                  ],
+                  inputFormatters: AppInputFormatters.personName,
                 ),
                 const SizedBox(height: 14),
 
