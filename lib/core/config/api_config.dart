@@ -12,7 +12,7 @@ class ApiConfig {
   /// Clave pública Culqi (sandbox). En prod: --dart-define=CULQI_PK=pk_live_...
   static const String culqiPublicKey = String.fromEnvironment(
     'CULQI_PK',
-    defaultValue: 'pk_test_tu_clave_publica',
+    defaultValue: 'pk_test_vJYOwLgj0Zghy6SF',
   );
 
   /// Client ID OAuth tipo Web (el mismo que Angular). Vacío = demo local.
