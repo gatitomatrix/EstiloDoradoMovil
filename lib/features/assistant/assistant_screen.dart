@@ -64,6 +64,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
   final List<_ChatMsg> _msgs = [];
   /// Últimas opciones mostradas: solo se puede agregar de esta lista.
   List<Map<String, dynamic>> _offered = [];
+  String? _awaiting;
   bool _sending = false;
   List<String> _suggestions = const [
     'Regalo de cumpleaños',
@@ -113,7 +114,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     _scrollToEnd();
 
     try {
-      final res = await _svc.send(text, offeredIds: _offeredIds);
+      final res = await _svc.send(text, offeredIds: _offeredIds, awaiting: _awaiting);
       if (!mounted) return;
 
       _PendingAdd? pending;
@@ -136,6 +137,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
       }
 
       setState(() {
+        _awaiting = (res.awaiting != null && res.awaiting!.isNotEmpty) ? res.awaiting : null;
         if (res.products.isNotEmpty) {
           _offered = res.products;
         }

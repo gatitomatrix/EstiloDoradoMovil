@@ -48,6 +48,7 @@ class AssistantReply {
   final Map<String, dynamic>? pedido;
   final List<String> suggestions;
   final AssistantAction? action;
+  final String? awaiting;
 
   AssistantReply({
     required this.reply,
@@ -56,6 +57,7 @@ class AssistantReply {
     this.pedido,
     required this.suggestions,
     this.action,
+    this.awaiting,
   });
 
   factory AssistantReply.fromJson(Map<String, dynamic> json) {
@@ -88,6 +90,7 @@ class AssistantReply {
       pedido: pedido,
       suggestions: suggestions,
       action: action,
+      awaiting: json['awaiting']?.toString(),
     );
   }
 }
@@ -95,11 +98,12 @@ class AssistantReply {
 class AssistantService {
   final ApiService _api = ApiService();
 
-  Future<AssistantReply> send(String message, {List<int> offeredIds = const []}) async {
+  Future<AssistantReply> send(String message, {List<int> offeredIds = const [], String? awaiting}) async {
     try {
       final body = <String, dynamic>{
         'message': message,
         if (offeredIds.isNotEmpty) 'offered_ids': offeredIds,
+        if (awaiting != null && awaiting.isNotEmpty) 'awaiting': awaiting,
       };
       final response = await _api.postWithTimeout(
         ApiConfig.asistente,
