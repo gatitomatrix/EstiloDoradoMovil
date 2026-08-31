@@ -321,14 +321,6 @@ class _PagoScreenState extends State<PagoScreen> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      TextField(
-                        controller: _bolDir,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
                       _dd('Departamento', _bolDep, _deps, (v) async {
                         setModal(() => _bolDep = v);
                         if (v != null) await _loadProvs(v, forFactura: false);
@@ -346,6 +338,15 @@ class _PagoScreenState extends State<PagoScreen> {
                       _dd('Distrito', _bolDist, _dists, (v) {
                         setModal(() => _bolDist = v);
                       }),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _bolDir,
+                        decoration: const InputDecoration(
+                          labelText: 'Dirección',
+                          hintText: 'Calle, jirón, número',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
                     ] else ...[
                       TextField(
                         controller: _facRuc,
@@ -361,14 +362,6 @@ class _PagoScreenState extends State<PagoScreen> {
                         controller: _facRazon,
                         decoration: const InputDecoration(
                           labelText: 'Razón social',
-                          border: OutlineInputBorder(),
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      TextField(
-                        controller: _facDir,
-                        decoration: const InputDecoration(
-                          labelText: 'Dirección fiscal',
                           border: OutlineInputBorder(),
                         ),
                       ),
@@ -390,6 +383,15 @@ class _PagoScreenState extends State<PagoScreen> {
                       _dd('Distrito', _facDist, _dists, (v) {
                         setModal(() => _facDist = v);
                       }),
+                      const SizedBox(height: 10),
+                      TextField(
+                        controller: _facDir,
+                        decoration: const InputDecoration(
+                          labelText: 'Dirección fiscal',
+                          hintText: 'Calle, jirón, número',
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
                     ],
                     const SizedBox(height: 16),
                     SizedBox(
