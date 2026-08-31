@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/cart_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/services/api_service.dart';
 import '../../core/services/assistant_service.dart';
 import '../../core/utils/app_snackbar.dart';
@@ -38,6 +39,8 @@ class _ChatMsg {
   final _PendingAdd? pendingAdd;
   final String? whatsappUrl;
   final String? whatsappLabel;
+  final List<Map<String, dynamic>> pedidos;
+  final bool needLogin;
 
   _ChatMsg({
     required this.text,
@@ -47,6 +50,8 @@ class _ChatMsg {
     this.pendingAdd,
     this.whatsappUrl,
     this.whatsappLabel,
+    this.pedidos = const [],
+    this.needLogin = false,
   });
 }
 
@@ -65,6 +70,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
   /// Últimas opciones mostradas: solo se puede agregar de esta lista.
   List<Map<String, dynamic>> _offered = [];
   String? _awaiting;
+  Map<String, dynamic>? _complaint;
   bool _sending = false;
   List<String> _suggestions = const [
     'Regalo de cumpleaños',
@@ -114,7 +120,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     _scrollToEnd();
 
     try {
-      final res = await _svc.send(text, offeredIds: _offeredIds, awaiting: _awaiting);
+      final res = await _svc.send(text, offeredIds: _offeredIds, awaiting: _awaiting, complaint: _complaint);
       if (!mounted) return;
 
       _PendingAdd? pending;
@@ -138,6 +144,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
 
       setState(() {
         _awaiting = (res.awaiting != null && res.awaiting!.isNotEmpty) ? res.awaiting : null;
+        if (res.complaint != null) _complaint = res.complaint;
         if (res.products.isNotEmpty) {
           _offered = res.products;
         }
@@ -150,6 +157,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
             pendingAdd: pending,
             whatsappUrl: waUrl,
             whatsappLabel: waLabel,
+            pedidos: res.pedidos,
+            needLogin: res.action?.type == 'login',
           ),
         );
         _sending = false;
@@ -388,6 +397,28 @@ class _AssistantScreenState extends State<AssistantScreen> {
             if (m.products.isNotEmpty) ...[
               const SizedBox(height: 8),
               ...m.products.take(6).map(_productCard),
+            ],
+            if (m.pedidos.isNotEmpty) ...[
+              const SizedBox(height: 8),
+              ...m.pedidos.map((o) {
+                final id = o['id_pedido'];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 6),
+                  child: OutlinedButton(
+                    onPressed: () => _send('pedido $id'),
+                    child: Text('#$id · S/ ${o['total']} · ${o['fecha'] ?? ''}'),
+                  ),
+                );
+              }),
+              TextButton(onPressed: () => _send('otro'), child: const Text('Otro / WhatsApp')),
+            ],
+            if (m.needLogin) ...[
+              const SizedBox(height: 8),
+              FilledButton(
+                onPressed: () => context.push('/login'),
+                style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: Colors.black87),
+                child: const Text('Iniciar sesión'),
+              ),
             ],
             if (m.whatsappUrl != null) ...[
               const SizedBox(height: 8),

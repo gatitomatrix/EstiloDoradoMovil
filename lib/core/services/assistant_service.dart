@@ -49,6 +49,8 @@ class AssistantReply {
   final List<String> suggestions;
   final AssistantAction? action;
   final String? awaiting;
+  final List<Map<String, dynamic>> pedidos;
+  final Map<String, dynamic>? complaint;
 
   AssistantReply({
     required this.reply,
@@ -58,6 +60,8 @@ class AssistantReply {
     required this.suggestions,
     this.action,
     this.awaiting,
+    this.pedidos = const [],
+    this.complaint,
   });
 
   factory AssistantReply.fromJson(Map<String, dynamic> json) {
@@ -83,6 +87,16 @@ class AssistantReply {
     if (json['action'] is Map) {
       action = AssistantAction.fromJson(Map<String, dynamic>.from(json['action'] as Map));
     }
+    final pedidos = <Map<String, dynamic>>[];
+    if (json['pedidos'] is List) {
+      for (final p in json['pedidos'] as List) {
+        if (p is Map) pedidos.add(Map<String, dynamic>.from(p));
+      }
+    }
+    Map<String, dynamic>? complaint;
+    if (json['complaint'] is Map) {
+      complaint = Map<String, dynamic>.from(json['complaint'] as Map);
+    }
     return AssistantReply(
       reply: (json['reply'] ?? '').toString(),
       driver: (json['driver'] ?? 'rules').toString(),
@@ -91,6 +105,8 @@ class AssistantReply {
       suggestions: suggestions,
       action: action,
       awaiting: json['awaiting']?.toString(),
+      pedidos: pedidos,
+      complaint: complaint,
     );
   }
 }
@@ -98,12 +114,13 @@ class AssistantReply {
 class AssistantService {
   final ApiService _api = ApiService();
 
-  Future<AssistantReply> send(String message, {List<int> offeredIds = const [], String? awaiting}) async {
+  Future<AssistantReply> send(String message, {List<int> offeredIds = const [], String? awaiting, Map<String, dynamic>? complaint}) async {
     try {
       final body = <String, dynamic>{
         'message': message,
         if (offeredIds.isNotEmpty) 'offered_ids': offeredIds,
         if (awaiting != null && awaiting.isNotEmpty) 'awaiting': awaiting,
+        if (complaint != null) 'complaint': complaint,
       };
       final response = await _api.postWithTimeout(
         ApiConfig.asistente,
