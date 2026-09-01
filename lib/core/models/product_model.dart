@@ -27,7 +27,8 @@ class Product {
       nombre: json['nombre']?.toString() ?? 'Sin nombre',
       descripcion: json['descripcion']?.toString(),
       precioVenta:
-          double.tryParse(json['precio_venta']?.toString() ?? '0') ?? 0.0,
+          double.tryParse((json['precio_final'] ?? json['precio_venta'])?.toString() ?? '0') ??
+          0.0,
       stock: int.tryParse(json['stock']?.toString() ?? '0') ?? 0,
       imagenUrl: (json['imagen_url'] ?? json['imagenUrl'])?.toString(),
       estado: json['estado']?.toString(),
