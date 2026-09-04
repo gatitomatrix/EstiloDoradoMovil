@@ -1,6 +1,7 @@
 // lib/core/services/ubigeo_service.dart
 import 'dart:convert';
 import 'package:flutter/services.dart';
+import '../utils/tarifa_envio.dart';
 
 class UbigeoService {
   Map<String, Map<String, List<String>>>? _data;
@@ -23,11 +24,12 @@ class UbigeoService {
     });
   }
 
-  Future<List<String>> getDepartamentos() async {
+  Future<List<String>> getDepartamentos({bool soloEnvio = false}) async {
     await ensureLoaded();
     final keys = _data?.keys.toList() ?? [];
     keys.sort();
-    return keys;
+    if (!soloEnvio) return keys;
+    return keys.where((d) => TarifaEnvio.cubre(departamento: d)).toList();
   }
 
   Future<List<String>> getProvincias(String departamento) async {

@@ -9,6 +9,9 @@ class TarifaEnvio {
     required this.etiqueta,
   });
 
+  static const coberturaTexto =
+      'Envíos a Lima, Callao, Junín (Huancayo) y Pasco (Cerro de Pasco). Otras ciudades: recojo en tienda.';
+
   static String _norm(String? s) {
     var t = (s ?? '').toUpperCase().trim();
     const map = {
@@ -22,6 +25,19 @@ class TarifaEnvio {
     };
     map.forEach((k, v) => t = t.replaceAll(k, v));
     return t;
+  }
+
+  static bool cubre({String? departamento, String? provincia}) {
+    final d = _norm(departamento);
+    final p = _norm(provincia);
+    if (p.contains('HUANCAYO') || p.contains('CERRO DE PASCO')) return true;
+    if (d.contains('JUNIN') ||
+        d.contains('LIMA') ||
+        d.contains('CALLAO') ||
+        d.contains('PASCO')) {
+      return true;
+    }
+    return false;
   }
 
   static TarifaEnvio estimar({String? departamento, String? provincia}) {
@@ -41,6 +57,13 @@ class TarifaEnvio {
         etiqueta: 'Junín (otras provincias) · estimado Shalom',
       );
     }
+    if (d.contains('PASCO') || p.contains('CERRO DE PASCO') || p.contains('PASCO')) {
+      return const TarifaEnvio(
+        costo: 14,
+        zona: 'pasco',
+        etiqueta: 'Pasco / Cerro de Pasco · estimado Shalom',
+      );
+    }
     if (d.contains('LIMA') ||
         d.contains('CALLAO') ||
         p.contains('CALLAO') ||
@@ -52,9 +75,9 @@ class TarifaEnvio {
       );
     }
     return const TarifaEnvio(
-      costo: 25,
-      zona: 'resto',
-      etiqueta: 'Resto del Perú · estimado Shalom',
+      costo: 0,
+      zona: 'fuera',
+      etiqueta: 'Fuera de cobertura',
     );
   }
 

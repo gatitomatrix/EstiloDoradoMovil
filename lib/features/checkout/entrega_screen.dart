@@ -43,7 +43,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   @override
   void initState() {
     super.initState();
-    _ubigeo.getDepartamentos().then((d) {
+    _ubigeo.getDepartamentos(soloEnvio: true).then((d) {
       if (mounted) setState(() => _deps = d);
     });
     _viaCtrl.addListener(_saveDraft);
@@ -233,6 +233,12 @@ class _EntregaScreenState extends State<EntregaScreen> {
   }
 
   void _confirmarYGuardar(CheckoutProvider checkout) {
+    if (!TarifaEnvio.cubre(departamento: _dep, provincia: _prov)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text(TarifaEnvio.coberturaTexto)),
+      );
+      return;
+    }
     final addr = DeliveryAddress(
       departamento: _dep!,
       provincia: _prov!,
@@ -332,7 +338,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
               _DeliveryOption(
                 icon: Icons.local_shipping_outlined,
                 title: 'Envío Express',
-                subtitle: 'Ingresa tu dirección para conocer disponibilidad',
+                subtitle: 'Solo Lima, Callao, Junín (Huancayo) y Pasco (Cerro de Pasco).',
                 selected: checkout.mode == DeliveryMode.express,
                 onTap: _openExpress,
               ),
