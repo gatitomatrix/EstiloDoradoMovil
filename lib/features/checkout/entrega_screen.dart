@@ -46,6 +46,9 @@ class _EntregaScreenState extends State<EntregaScreen> {
     _ubigeo.getDepartamentos().then((d) {
       if (mounted) setState(() => _deps = d);
     });
+    _viaCtrl.addListener(_saveDraft);
+    _numCtrl.addListener(_saveDraft);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDraft());
   }
 
   @override
@@ -65,11 +68,55 @@ class _EntregaScreenState extends State<EntregaScreen> {
     );
   }
 
+  void _saveDraft() {
+    if (!mounted) return;
+    context.read<CheckoutProvider>().setDraft(
+          departamento: _dep,
+          provincia: _prov,
+          distrito: _dist,
+          via: _viaCtrl.text,
+          numero: _numCtrl.text,
+          lat: _lat,
+          lng: _lng,
+        );
+  }
+
+  Future<void> _restoreDraft() async {
+    if (!mounted) return;
+    final c = context.read<CheckoutProvider>();
+    final a = (c.draft != null && c.draft!.via != 'Retiro en tienda')
+        ? c.draft
+        : (c.mode == DeliveryMode.express ? c.address : null);
+    if (a == null || a.via.isEmpty) return;
+    setState(() {
+      _dep = a.departamento.isEmpty ? null : a.departamento;
+      _lat = a.lat;
+      _lng = a.lng;
+    });
+    if (a.departamento.isNotEmpty) {
+      final p = await _ubigeo.getProvincias(a.departamento);
+      if (!mounted) return;
+      setState(() => _provs = p);
+    }
+    if (a.departamento.isNotEmpty && a.provincia.isNotEmpty) {
+      final d = await _ubigeo.getDistritos(a.departamento, a.provincia);
+      if (!mounted) return;
+      setState(() {
+        _prov = a.provincia;
+        _dists = d;
+        _dist = a.distrito.isEmpty ? null : a.distrito;
+      });
+    }
+    _viaCtrl.text = a.via;
+    _numCtrl.text = a.numero == '-' ? '' : a.numero;
+  }
+
   void _openExpress() {
     setState(() {
       _showAddressSheet = true;
       _stepMap = false;
     });
+    _restoreDraft();
   }
 
   Future<void> _onDepChanged(String? v) async {
@@ -84,6 +131,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
       final p = await _ubigeo.getProvincias(v);
       if (mounted) setState(() => _provs = p);
     }
+    _saveDraft();
   }
 
   Future<void> _onProvChanged(String? v) async {
@@ -96,6 +144,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
       final d = await _ubigeo.getDistritos(_dep!, v);
       if (mounted) setState(() => _dists = d);
     }
+    _saveDraft();
   }
 
   Future<void> _openInteractiveMap() async {
@@ -123,6 +172,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
       _lat = result.lat;
       _lng = result.lng;
     });
+    _saveDraft();
 
     // Intentar rellenar vía/número desde reverse
     final rev = await _geo.reverseAddress(result.lat, result.lng);
@@ -461,7 +511,10 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                 'Distrito',
                                 _dist,
                                 _dists,
-                                (v) => setState(() => _dist = v),
+                                (v) => setState(() {
+                                  _dist = v;
+                                  _saveDraft();
+                                }),
                               ),
                               const SizedBox(height: 10),
                               TextField(
