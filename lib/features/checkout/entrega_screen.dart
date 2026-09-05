@@ -97,7 +97,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
     if (a.departamento.isNotEmpty) {
       final p = await _ubigeo.getProvincias(a.departamento);
       if (!mounted) return;
-      setState(() => _provs = p);
+      setState(() => _provs = TarifaEnvio.filtrarProvincias(a.departamento, p));
     }
     if (a.departamento.isNotEmpty && a.provincia.isNotEmpty) {
       final d = await _ubigeo.getDistritos(a.departamento, a.provincia);
@@ -130,7 +130,19 @@ class _EntregaScreenState extends State<EntregaScreen> {
     });
     if (v != null && v.isNotEmpty) {
       final p = await _ubigeo.getProvincias(v);
-      if (mounted) setState(() => _provs = p);
+      if (mounted) {
+        final filtradas = TarifaEnvio.filtrarProvincias(v, p);
+        setState(() {
+          _provs = filtradas;
+          if (filtradas.length == 1) {
+            _prov = filtradas.first;
+          }
+        });
+        if (filtradas.length == 1) {
+          await _onProvChanged(filtradas.first);
+          return;
+        }
+      }
     }
     _saveDraft();
   }
@@ -339,7 +351,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
               _DeliveryOption(
                 icon: Icons.local_shipping_outlined,
                 title: 'Envío Express',
-                subtitle: 'Solo Lima, Callao, Junín (Huancayo) y Pasco (Cerro de Pasco).',
+                subtitle: 'Solo Lima (distritos de Lima).',
                 selected: checkout.mode == DeliveryMode.express,
                 onTap: _openExpress,
               ),

@@ -10,7 +10,7 @@ class TarifaEnvio {
   });
 
   static const coberturaTexto =
-      'Envíos a Lima, Callao, Junín (Huancayo) y Pasco (Cerro de Pasco). Otras ciudades: recojo en tienda.';
+      'Envíos solo a Lima (distritos de Lima). Otras ciudades: recojo en tienda.';
 
   static String _norm(String? s) {
     var t = (s ?? '').toUpperCase().trim();
@@ -30,48 +30,23 @@ class TarifaEnvio {
   static bool cubre({String? departamento, String? provincia}) {
     final d = _norm(departamento);
     final p = _norm(provincia);
-    if (p.contains('HUANCAYO') || p.contains('CERRO DE PASCO')) return true;
-    if (d.contains('JUNIN') ||
-        d.contains('LIMA') ||
-        d.contains('CALLAO') ||
-        d.contains('PASCO')) {
-      return true;
+    if (d.contains('CALLAO') || d.contains('JUNIN') || d.contains('PASCO')) {
+      return false;
     }
-    return false;
+    if (p.isNotEmpty && p != 'LIMA') return false;
+    return d.contains('LIMA') || p == 'LIMA';
+  }
+
+  static List<String> filtrarProvincias(String? departamento, List<String> todas) {
+    return todas.where((p) => cubre(departamento: departamento, provincia: p)).toList();
   }
 
   static TarifaEnvio estimar({String? departamento, String? provincia}) {
-    final d = _norm(departamento);
-    final p = _norm(provincia);
-    if (p.contains('HUANCAYO')) {
-      return const TarifaEnvio(
-        costo: 8,
-        zona: 'huancayo',
-        etiqueta: 'Huancayo (misma ciudad) · estimado Shalom',
-      );
-    }
-    if (d.contains('JUNIN')) {
-      return const TarifaEnvio(
-        costo: 12,
-        zona: 'junin',
-        etiqueta: 'Junín (otras provincias) · estimado Shalom',
-      );
-    }
-    if (d.contains('PASCO') || p.contains('CERRO DE PASCO') || p.contains('PASCO')) {
-      return const TarifaEnvio(
-        costo: 14,
-        zona: 'pasco',
-        etiqueta: 'Pasco / Cerro de Pasco · estimado Shalom',
-      );
-    }
-    if (d.contains('LIMA') ||
-        d.contains('CALLAO') ||
-        p.contains('CALLAO') ||
-        p.contains('LIMA')) {
+    if (cubre(departamento: departamento, provincia: provincia)) {
       return const TarifaEnvio(
         costo: 18,
         zona: 'lima',
-        etiqueta: 'Lima / Callao · estimado Shalom',
+        etiqueta: 'Lima · estimado Shalom',
       );
     }
     return const TarifaEnvio(
