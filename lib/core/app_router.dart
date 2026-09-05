@@ -13,6 +13,7 @@ import '../features/products/product_detail_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/auth/forgot_password_screen.dart';
+import '../features/auth/privacidad_screen.dart';
 import '../features/cart/cart_screen.dart';
 import '../features/checkout/entrega_screen.dart';
 import '../features/checkout/confirmar_entrega_screen.dart';
@@ -89,6 +90,7 @@ class AppRouter {
       GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(path: '/registro', builder: (context, state) => const RegisterScreen()),
       GoRoute(path: '/recuperar', builder: (context, state) => const ForgotPasswordScreen()),
+      GoRoute(path: '/privacidad', builder: (context, state) => const PrivacidadScreen()),
       GoRoute(path: '/home', builder: (context, state) => const HomeScreen()),
       GoRoute(path: '/asistente', builder: (context, state) => const AssistantScreen()),
       GoRoute(path: '/mi-cuenta', builder: (context, state) => const MiCuentaScreen()),

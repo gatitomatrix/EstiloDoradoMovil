@@ -292,8 +292,14 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                       onPressed: () => context.push('/recuperar'),
                       child: const Text('¿Olvidaste tu contraseña?'),
                     ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: () => context.push('/privacidad'),
+                        child: const Text('Política de privacidad'),
+                      ),
+                    ),
                     const SizedBox(height: 24),
-
                     SizedBox(
                       width: double.infinity,
                       height: 56,

@@ -9,7 +9,8 @@ import '../../core/utils/input_formatters.dart';
 import '../../core/app_router.dart';
 import '../../core/config/api_config.dart';
 import '../../core/services/google_sign_in_helper.dart';
-import 'package:url_launcher/url_launcher.dart';
+import '../../core/utils/app_snackbar.dart';
+import 'privacidad_screen.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -373,36 +374,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                 ),
                 const SizedBox(height: 4),
-                Text.rich(
-                  TextSpan(
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade700, height: 1.35),
-                    children: [
-                      const TextSpan(
-                        text: 'Al crear cuenta aceptas el tratamiento de datos descrito en la ',
-                      ),
-                      WidgetSpan(
-                        alignment: PlaceholderAlignment.baseline,
-                        baseline: TextBaseline.alphabetic,
-                        child: GestureDetector(
-                          onTap: () => launchUrl(
-                            Uri.parse('https://estilodorado.net.pe/privacidad'),
-                            mode: LaunchMode.externalApplication,
-                          ),
-                          child: const Text(
-                            'política de privacidad',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Color(0xFF8A6D1D),
-                              decoration: TextDecoration.underline,
-                            ),
-                          ),
-                        ),
-                      ),
-                      const TextSpan(text: '.'),
-                    ],
-                  ),
-                  textAlign: TextAlign.center,
-                ),
+                const PrivacidadAviso(),
               ],
             ),
           ),
