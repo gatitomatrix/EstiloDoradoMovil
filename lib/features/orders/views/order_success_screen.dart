@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/checkout_models.dart';
+import '../../../core/utils/tarifa_envio.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -86,7 +87,7 @@ class OrderSuccessScreen extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               isCash
-                  ? 'Tu pedido quedó pendiente de pago en tienda. Te esperamos para el recojo.'
+                  ? 'Tu pedido quedó pendiente de pago en tienda. Recoge en ${TarifaEnvio.direccionTienda}'
                   : 'Gracias por tu compra. Puedes descargar el comprobante o ver el detalle.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.grey[700], height: 1.35),

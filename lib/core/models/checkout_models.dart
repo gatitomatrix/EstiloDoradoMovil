@@ -1,5 +1,7 @@
 // lib/core/models/checkout_models.dart
 
+import '../utils/tarifa_envio.dart';
+
 enum DeliveryMode { none, storePickup, express }
 
 class DeliveryAddress {
@@ -55,12 +57,12 @@ class DeliveryAddress {
       );
 
   factory DeliveryAddress.storePickup() => const DeliveryAddress(
-        departamento: '',
-        provincia: '',
-        distrito: '',
+        departamento: 'Pasco',
+        provincia: 'Pasco',
+        distrito: 'Chaupimarca',
         via: 'Retiro en tienda',
-        numero: '-',
-        full: 'Retiro en tienda',
+        numero: 'S/N',
+        full: TarifaEnvio.textoRecojo,
       );
 }
 

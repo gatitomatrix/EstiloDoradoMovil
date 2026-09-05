@@ -9,6 +9,7 @@ import '../../core/providers/payment_provider.dart';
 import '../../core/services/order_service.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/utils/tarifa_envio.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -558,7 +559,8 @@ class _PagoScreenState extends State<PagoScreen> {
               body:
                   'Si eliges retiro en tienda puedes pagar en efectivo al recoger. '
                   'No se emiten comprobantes electrónicos (PDF/XML/CDR) en esta modalidad; '
-                  'si lo necesitas, solicítalo en tienda.',
+                  'si lo necesitas, solicítalo en tienda.\n'
+                  '📍 Recoge en: ${TarifaEnvio.direccionTienda}',
             ),
           const SizedBox(height: 8),
           const Text('Método de pago', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

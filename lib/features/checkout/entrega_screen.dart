@@ -331,7 +331,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 icon: Icons.storefront_outlined,
                 title: 'Retira tu pedido en tienda',
                 subtitle:
-                    'Haz tu retiro en tienda de forma rápida. Si pagas con Culqi obtienes comprobante electrónico.',
+                    'Haz tu retiro en tienda de forma rápida. Si pagas con Culqi obtienes comprobante electrónico.\n📍 ${TarifaEnvio.direccionTienda}',
                 selected: checkout.mode == DeliveryMode.storePickup,
                 onTap: () => _pickStore(checkout),
               ),

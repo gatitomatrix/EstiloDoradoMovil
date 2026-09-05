@@ -21,7 +21,7 @@ class CheckoutProvider extends ChangeNotifier {
   bool get canCash => mode == DeliveryMode.storePickup;
 
   String get direccionEntrega {
-    if (mode == DeliveryMode.storePickup) return 'Retiro en tienda -';
+    if (mode == DeliveryMode.storePickup) return TarifaEnvio.textoRecojo;
     return address?.display ?? '';
   }
 
@@ -126,7 +126,7 @@ class CheckoutProvider extends ChangeNotifier {
     if (m == DeliveryMode.storePickup) {
       fee = 0;
       discount = 0;
-      address ??= DeliveryAddress.storePickup();
+      address = DeliveryAddress.storePickup();
     } else if (m == DeliveryMode.express) {
       final a = address;
       fee = a == null

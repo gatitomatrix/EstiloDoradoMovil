@@ -86,8 +86,8 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                           'Retiro en tienda',
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: const Text(
-                          'Recoge en tienda de inmediato y de forma segura.',
+                        subtitle: Text(
+                          'Recoge en tienda de inmediato y de forma segura.\n📍 ${TarifaEnvio.direccionTienda}',
                         ),
                         secondary: const Text(
                           'S/ 0',

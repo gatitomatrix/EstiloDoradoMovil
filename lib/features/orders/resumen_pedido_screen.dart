@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/services/order_service.dart';
+import '../../core/utils/tarifa_envio.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -366,11 +367,11 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
         else if (_isCashPending)
           Card(
             color: Colors.amber.shade50,
-            child: const ListTile(
-              leading: Icon(Icons.storefront, color: Colors.orange),
-              title: Text('Pago en efectivo (retiro en tienda)'),
+            child: ListTile(
+              leading: const Icon(Icons.storefront, color: Colors.orange),
+              title: const Text('Pago en efectivo (retiro en tienda)'),
               subtitle: Text(
-                'Paga al recoger. Mientras esté pendiente puedes cancelar el pedido.',
+                'Paga al recoger en ${TarifaEnvio.direccionTienda}. Mientras esté pendiente puedes cancelar el pedido.',
               ),
             ),
           )
