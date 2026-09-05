@@ -187,6 +187,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 8),
+                  if (product.enOferta) ...[
+                    Text(
+                      'S/ ${product.precioLista.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade600,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
                   Text(
                     'S/ ${product.precioVenta.toStringAsFixed(2)}',
                     style: const TextStyle(
@@ -212,6 +223,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       ),
                     ),
                   ),
+                  if ((product.descripcion ?? '').trim().isNotEmpty) ...[
+                    const SizedBox(height: 16),
+                    Text(
+                      product.descripcion!.trim(),
+                      style: TextStyle(fontSize: 15, height: 1.4, color: Colors.grey.shade800),
+                    ),
+                  ],
                   if (qtyInCart > 0) ...[
                     const SizedBox(height: 8),
                     Text(

@@ -396,7 +396,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             ],
             if (m.products.isNotEmpty) ...[
               const SizedBox(height: 8),
-              ...m.products.take(6).map(_productCard),
+              ...m.products.take(6).map((p) => _productCard(p, infoOnly: m.whatsappUrl != null)),
             ],
             if (m.pedidos.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -470,12 +470,13 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
   }
 
-  Widget _productCard(Map<String, dynamic> p) {
+  Widget _productCard(Map<String, dynamic> p, {bool infoOnly = false}) {
     final id = p['id'];
     final nombre = p['nombre']?.toString() ?? 'Producto';
     final precio = p['precio'];
     final stock = int.tryParse(p['stock']?.toString() ?? '0') ?? 0;
     final agotado = stock < 1;
+    final img = (p['imagen_url'] ?? p['imagenUrl'])?.toString();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -487,39 +488,51 @@ class _AssistantScreenState extends State<AssistantScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              InkWell(
-                onTap: id == null ? null : () => context.push('/producto/$id'),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        '$nombre\nS/ ${precio is num ? precio.toStringAsFixed(2) : precio} · stock $stock',
-                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      ),
-                    ),
-                    const Icon(Icons.chevron_right, color: Colors.black54),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 6),
               Row(
                 children: [
-                  TextButton(
-                    onPressed: id == null ? null : () => context.push('/producto/$id'),
-                    child: const Text('Ver'),
-                  ),
-                  const SizedBox(width: 4),
-                  FilledButton.tonal(
-                    onPressed: agotado ? null : () => _askConfirm(p),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: agotado ? Colors.grey.shade300 : _gold,
-                      foregroundColor: Colors.black87,
-                      visualDensity: VisualDensity.compact,
+                  if (img != null && img.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        img,
+                        width: 48,
+                        height: 48,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 48),
+                      ),
                     ),
-                    child: Text(agotado ? 'Agotado' : 'Agregar'),
+                  if (img != null && img.isNotEmpty) const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      infoOnly
+                          ? '$nombre\nProducto del pedido (referencia)'
+                          : '$nombre\nS/ ${precio is num ? precio.toStringAsFixed(2) : precio} · stock $stock',
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                    ),
                   ),
                 ],
               ),
+              if (!infoOnly) ...[
+                const SizedBox(height: 6),
+                Row(
+                  children: [
+                    TextButton(
+                      onPressed: id == null ? null : () => context.push('/producto/$id'),
+                      child: const Text('Ver'),
+                    ),
+                    const SizedBox(width: 4),
+                    FilledButton.tonal(
+                      onPressed: agotado ? null : () => _askConfirm(p),
+                      style: FilledButton.styleFrom(
+                        backgroundColor: agotado ? Colors.grey.shade300 : _gold,
+                        foregroundColor: Colors.black87,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Text(agotado ? 'Agotado' : 'Agregar'),
+                    ),
+                  ],
+                ),
+              ],
             ],
           ),
         ),

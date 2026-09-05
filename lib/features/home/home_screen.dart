@@ -1,5 +1,7 @@
 // lib/features/home/home_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -21,6 +23,8 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final _searchCtrl = TextEditingController();
+  final _minCtrl = TextEditingController();
+  final _maxCtrl = TextEditingController();
   String _lastLoc = '/home';
   DateTime? _lastCatalogReset;
 
@@ -47,6 +51,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     AppRouter.router.routerDelegate.removeListener(_onRouteChanged);
     AppRouter.routeObserver.unsubscribe(this);
     _searchCtrl.dispose();
+    _minCtrl.dispose();
+    _maxCtrl.dispose();
     super.dispose();
   }
 
@@ -73,6 +79,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     }
     _lastCatalogReset = now;
     _searchCtrl.clear();
+    _minCtrl.clear();
+    _maxCtrl.clear();
     Provider.of<ProductProvider>(context, listen: false).clearSearch();
     setState(() {});
   }
@@ -83,7 +91,20 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
       _showFullCatalog();
       return;
     }
-    await Provider.of<ProductProvider>(context, listen: false).loadProducts(search: query);
+    Provider.of<ProductProvider>(context, listen: false).setSearch(query);
+    setState(() {});
+  }
+
+  void _applyPrecio() {
+    double? parse(String s) {
+      final t = s.trim();
+      if (t.isEmpty) return null;
+      return double.tryParse(t);
+    }
+    Provider.of<ProductProvider>(context, listen: false).setPrecio(
+      min: parse(_minCtrl.text),
+      max: parse(_maxCtrl.text),
+    );
   }
 
   @override
@@ -191,6 +212,75 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 ),
               ),
             ),
+            SliverToBoxAdapter(
+              child: SizedBox(
+                height: 44,
+                child: ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                  children: ProductProvider.chips.map((c) {
+                    final on = productProvider.chip == c ||
+                        (c == 'Todos' && productProvider.chip.isEmpty);
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: ChoiceChip(
+                        label: Text(c),
+                        selected: on,
+                        selectedColor: const Color(0xFFD4AF37),
+                        onSelected: (_) {
+                          productProvider.setChip(c);
+                          setState(() {});
+                        },
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _minCtrl,
+                        keyboardType: TextInputType.number,
+                        maxLength: 3,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: const InputDecoration(
+                          counterText: '',
+                          hintText: 'Precio min',
+                          isDense: true,
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onSubmitted: (_) => _applyPrecio(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _maxCtrl,
+                        keyboardType: TextInputType.number,
+                        maxLength: 3,
+                        inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                        decoration: const InputDecoration(
+                          counterText: '',
+                          hintText: 'Precio máx',
+                          isDense: true,
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        onSubmitted: (_) => _applyPrecio(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton(onPressed: _applyPrecio, child: const Text('Filtrar')),
+                  ],
+                ),
+              ),
+            ),
             if (productProvider.search.isNotEmpty)
               SliverToBoxAdapter(
                 child: Padding(
@@ -280,7 +370,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 2,
-                    childAspectRatio: 0.72,
+                    childAspectRatio: 0.62,
                     crossAxisSpacing: 16,
                     mainAxisSpacing: 16,
                   ),
@@ -344,12 +434,30 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       ),
                     ),
                     const SizedBox(height: 4),
+                    if (product.enOferta) ...[
+                      Text(
+                        'S/ ${product.precioLista.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                    ],
                     Text(
                       'S/ ${product.precioVenta.toStringAsFixed(2)}',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
                         color: Color(0xFFD4AF37),
+                      ),
+                    ),
+                    Text(
+                      product.stock > 0 ? 'Stock ${product.stock}' : 'Agotado',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: product.stock > 0 ? Colors.green.shade800 : Colors.red.shade700,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -489,9 +597,45 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 }
 
-/// Cabecera de marca (~30% de la pantalla): banner + logo.
-class _HeroBanner extends StatelessWidget {
+/// Carrusel de portadas (7 s).
+class _HeroBanner extends StatefulWidget {
   const _HeroBanner();
+
+  @override
+  State<_HeroBanner> createState() => _HeroBannerState();
+}
+
+class _HeroBannerState extends State<_HeroBanner> {
+  static const _urls = [
+    'https://i.imgur.com/Lz3mumi.png',
+    'https://i.imgur.com/bG9AmNv.png',
+    'https://i.imgur.com/9b8uchv.png',
+  ];
+
+  final _page = PageController();
+  Timer? _timer;
+  int _i = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 7), (_) {
+      if (!mounted || !_page.hasClients) return;
+      _i = (_i + 1) % _urls.length;
+      _page.animateToPage(
+        _i,
+        duration: const Duration(milliseconds: 450),
+        curve: Curves.easeInOut,
+      );
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _page.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -504,64 +648,35 @@ class _HeroBanner extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          Image.asset(
-            'assets/banners/portada1.png',
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => Container(
-              color: const Color(0xFF2D2418),
+          PageView.builder(
+            controller: _page,
+            itemCount: _urls.length,
+            onPageChanged: (i) => setState(() => _i = i),
+            itemBuilder: (_, i) => CachedNetworkImage(
+              imageUrl: _urls[i],
+              fit: BoxFit.cover,
+              placeholder: (_, __) => Container(color: const Color(0xFF2D2418)),
+              errorWidget: (_, __, ___) => Container(color: const Color(0xFF2D2418)),
             ),
           ),
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0x66000000),
-                  Color(0x99000000),
-                  Color(0xCC1A140C),
-                ],
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            child: Column(
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 10,
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset(
-                    'assets/images/logo_empresa.jpeg',
-                    height: bannerH * 0.42,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.storefront,
-                      size: 64,
-                      color: Color(0xFFD4AF37),
-                    ),
+              children: List.generate(_urls.length, (i) {
+                final on = i == _i;
+                return Container(
+                  width: on ? 18 : 8,
+                  height: 8,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    color: on ? const Color(0xFFD4AF37) : Colors.white70,
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Estilo Dorado',
-                  style: TextStyle(
-                    color: Color(0xFFD4AF37),
-                    fontSize: 22,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 0.4,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                const Text(
-                  'Regalos y detalles que enamoran',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
+                );
+              }),
             ),
           ),
         ],
