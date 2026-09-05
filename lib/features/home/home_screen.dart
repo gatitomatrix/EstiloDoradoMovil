@@ -141,7 +141,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           ),
           IconButton(
             tooltip: 'Dori, tu asistente',
-            icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white),
+            icon: ClipOval(
+              child: Image.asset(
+                'assets/icons/dori-fab.png',
+                width: 32,
+                height: 32,
+                fit: BoxFit.cover,
+              ),
+            ),
             onPressed: () {
               setState(() => _showDoriHint = false);
               context.push('/asistente');
@@ -545,7 +552,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.smart_toy_outlined),
+            leading: ClipOval(
+              child: Image.asset(
+                'assets/icons/dori-fab.png',
+                width: 36,
+                height: 36,
+                fit: BoxFit.cover,
+              ),
+            ),
             title: const Text('Dori'),
             subtitle: const Text('Hola, soy Dori. ¿Te ayudo a elegir un regalo?'),
             onTap: () {
