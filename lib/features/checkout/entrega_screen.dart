@@ -104,8 +104,8 @@ class _EntregaScreenState extends State<EntregaScreen> {
       if (!mounted) return;
       setState(() {
         _prov = a.provincia;
-        _dists = d;
-        _dist = a.distrito.isEmpty ? null : a.distrito;
+        _dists = TarifaEnvio.filtrarDistritos(a.departamento, a.provincia, d);
+        _dist = _dists.contains(a.distrito) ? a.distrito : null;
       });
     }
     _viaCtrl.text = a.via;
@@ -155,7 +155,9 @@ class _EntregaScreenState extends State<EntregaScreen> {
     });
     if (_dep != null && v != null && v.isNotEmpty) {
       final d = await _ubigeo.getDistritos(_dep!, v);
-      if (mounted) setState(() => _dists = d);
+      if (mounted) {
+        setState(() => _dists = TarifaEnvio.filtrarDistritos(_dep, v, d));
+      }
     }
     _saveDraft();
   }
@@ -246,7 +248,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   }
 
   void _confirmarYGuardar(CheckoutProvider checkout) {
-    if (!TarifaEnvio.cubre(departamento: _dep, provincia: _prov)) {
+    if (!TarifaEnvio.cubre(departamento: _dep, provincia: _prov, distrito: _dist)) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(TarifaEnvio.coberturaTexto)),
       );
@@ -351,7 +353,8 @@ class _EntregaScreenState extends State<EntregaScreen> {
               _DeliveryOption(
                 icon: Icons.local_shipping_outlined,
                 title: 'Envío Express',
-                subtitle: 'Solo Lima (distritos de Lima).',
+                subtitle:
+                    'Lima Metropolitana y Callao; Pasco (todos sus distritos); Huancayo (Chilca, El Tambo y Huancayo).',
                 selected: checkout.mode == DeliveryMode.express,
                 onTap: _openExpress,
               ),

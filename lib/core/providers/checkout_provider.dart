@@ -108,6 +108,7 @@ class CheckoutProvider extends ChangeNotifier {
         TarifaEnvio.estimar(
           departamento: addr.departamento,
           provincia: addr.provincia,
+          distrito: addr.distrito,
         ).costo;
     this.discount = discount;
     notifyListeners();
@@ -134,6 +135,7 @@ class CheckoutProvider extends ChangeNotifier {
           : TarifaEnvio.estimar(
               departamento: a.departamento,
               provincia: a.provincia,
+              distrito: a.distrito,
             ).costo;
       discount = 0;
     }

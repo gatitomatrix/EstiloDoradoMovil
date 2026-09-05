@@ -20,6 +20,7 @@ class ConfirmarEntregaScreen extends StatelessWidget {
     final expressTarifa = TarifaEnvio.estimar(
       departamento: checkout.address?.departamento,
       provincia: checkout.address?.provincia,
+      distrito: checkout.address?.distrito,
     );
 
     // No redirigir en post-frame de forma agresiva (puede pisar otras pantallas).
