@@ -8,6 +8,7 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
+import '../../core/utils/tarifa_envio.dart';
 import '../../core/widgets/address_map_preview.dart';
 import 'interactive_map_screen.dart';
 
@@ -235,7 +236,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   void _confirmarYGuardar(CheckoutProvider checkout) {
     if (!TarifaEnvio.cubre(departamento: _dep, provincia: _prov)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text(TarifaEnvio.coberturaTexto)),
+        SnackBar(content: Text(TarifaEnvio.coberturaTexto)),
       );
       return;
     }
