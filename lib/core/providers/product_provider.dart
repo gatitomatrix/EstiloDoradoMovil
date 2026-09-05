@@ -13,6 +13,12 @@ class ProductProvider extends ChangeNotifier {
   String _chip = 'Todos';
   double? precioMin;
   double? precioMax;
+  int _loadGen = 0;
+  bool _loaded = false;
+
+  ProductProvider() {
+    loadProducts();
+  }
 
   static const chips = [
     'Todos',
@@ -65,18 +71,28 @@ class ProductProvider extends ChangeNotifier {
     } else if (search != null) {
       _search = search;
     }
-    _isLoading = true;
+    final gen = ++_loadGen;
+    _isLoading = _all.isEmpty;
     _error = null;
     notifyListeners();
 
     try {
-      _all = await _service.getAllProducts();
+      final list = await _service.getAllProducts();
+      if (gen != _loadGen) return;
+      _all = list;
+      _loaded = true;
+      if (list.isEmpty) {
+        _error = null;
+      }
     } catch (e) {
+      if (gen != _loadGen) return;
       _error = e.toString();
-      _all = [];
+      if (_all.isEmpty) _all = [];
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (gen == _loadGen) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
@@ -110,7 +126,7 @@ class ProductProvider extends ChangeNotifier {
     _chip = 'Todos';
     precioMin = null;
     precioMax = null;
-    if (_all.isEmpty) {
+    if (!_loaded || _all.isEmpty) {
       loadProducts();
     } else {
       notifyListeners();

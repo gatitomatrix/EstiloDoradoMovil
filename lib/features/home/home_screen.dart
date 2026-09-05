@@ -27,13 +27,20 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   final _maxCtrl = TextEditingController();
   String _lastLoc = '/home';
   DateTime? _lastCatalogReset;
+  bool _showDoriHint = true;
+  Timer? _doriHintTimer;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      context.read<ProductProvider>().loadProducts();
       _showFullCatalog();
       AppRouter.router.routerDelegate.addListener(_onRouteChanged);
+      _doriHintTimer = Timer(const Duration(seconds: 8), () {
+        if (mounted) setState(() => _showDoriHint = false);
+      });
     });
   }
 
@@ -53,6 +60,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     _searchCtrl.dispose();
     _minCtrl.dispose();
     _maxCtrl.dispose();
+    _doriHintTimer?.cancel();
     super.dispose();
   }
 
@@ -122,11 +130,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         backgroundColor: const Color(0xFFD4AF37),
         actions: [
           IconButton(
-            tooltip: 'Dori, tu asistente',
-            icon: const Icon(Icons.smart_toy_outlined),
-            onPressed: () => context.push('/asistente'),
-          ),
-          IconButton(
             tooltip: 'WhatsApp',
             icon: const Icon(Icons.chat, color: Color(0xFF128C7E)),
             onPressed: () async {
@@ -134,6 +137,14 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               if (!ok && context.mounted) {
                 AppSnackBar.err(context, 'No se pudo abrir WhatsApp');
               }
+            },
+          ),
+          IconButton(
+            tooltip: 'Dori, tu asistente',
+            icon: const Icon(Icons.chat_bubble_rounded, color: Colors.white),
+            onPressed: () {
+              setState(() => _showDoriHint = false);
+              context.push('/asistente');
             },
           ),
           Stack(
@@ -167,7 +178,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         ],
       ),
       drawer: _buildDrawer(context, authProvider),
-      body: RefreshIndicator(
+      body: Stack(
+        children: [
+          RefreshIndicator(
         color: const Color(0xFFD4AF37),
         onRefresh: () => productProvider.loadProducts(search: productProvider.search),
         child: CustomScrollView(
@@ -353,6 +366,10 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       textAlign: TextAlign.center,
                       style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                     ),
+                    TextButton(
+                      onPressed: () => productProvider.loadProducts(resetSearch: true),
+                      child: const Text('Recargar catálogo'),
+                    ),
                     if (productProvider.search.isNotEmpty)
                       TextButton(
                         onPressed: () {
@@ -385,6 +402,20 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               ),
           ],
         ),
+          ),
+          if (_showDoriHint)
+            Positioned(
+              top: 6,
+              right: 52,
+              child: _DoriNube(
+                onOpen: () {
+                  setState(() => _showDoriHint = false);
+                  context.push('/asistente');
+                },
+                onClose: () => setState(() => _showDoriHint = false),
+              ),
+            ),
+        ],
       ),
     );
   }
@@ -684,3 +715,82 @@ class _HeroBannerState extends State<_HeroBanner> {
     );
   }
 }
+
+class _DoriNube extends StatelessWidget {
+  final VoidCallback onOpen;
+  final VoidCallback onClose;
+  const _DoriNube({required this.onOpen, required this.onClose});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onOpen,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(right: 18),
+              child: CustomPaint(
+                size: const Size(14, 8),
+                painter: _NubeFlechaPainter(),
+              ),
+            ),
+            Container(
+              constraints: const BoxConstraints(maxWidth: 210),
+              padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x33000000), blurRadius: 10, offset: Offset(0, 3)),
+                ],
+                border: Border.all(color: const Color(0xFFD4AF37), width: 1.2),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'Hola, soy Dori.\n¿Te ayudo a elegir un regalo?',
+                      style: TextStyle(
+                        fontSize: 13,
+                        height: 1.25,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2D2418),
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: onClose,
+                    child: const Icon(Icons.close, size: 16, color: Colors.black54),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _NubeFlechaPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final fill = Paint()..color = Colors.white;
+    final path = Path()
+      ..moveTo(0, size.height)
+      ..lineTo(size.width / 2, 0)
+      ..lineTo(size.width, size.height)
+      ..close();
+    canvas.drawPath(path, fill);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
