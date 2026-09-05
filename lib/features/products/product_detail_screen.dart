@@ -257,7 +257,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: OutlinedButton.icon(
                       onPressed: () async {
                         final ok = await Whatsapp.open(
-                          'Hola, quiero consultar por: ${product.nombre}',
+                          'Hola, quiero consultar por: ${product.nombre}\n\nVer producto: https://estilodorado.net.pe/producto/${product.id}',
                         );
                         if (!ok && context.mounted) {
                           AppSnackBar.err(context, 'No se pudo abrir WhatsApp');
