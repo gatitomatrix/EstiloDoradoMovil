@@ -1,12 +1,10 @@
 // lib/core/config/api_config.dart
 class ApiConfig {
-  /// Emulador Android: http://10.0.2.2:8000/api
-  /// iOS simulador:   http://127.0.0.1:8000/api
-  /// Celular físico:  http://IP_DE_TU_PC:8000/api
-  /// flutter run --dart-define=API_BASE=http://192.168.1.42:8000/api
+  /// Por defecto: API en Render (mismo backend que estilodorado.net.pe).
+  /// Local XAMPP: flutter run --dart-define=API_BASE=http://10.0.2.2:8000/api
   static const String baseUrl = String.fromEnvironment(
     'API_BASE',
-    defaultValue: 'http://10.0.2.2:8000/api',
+    defaultValue: 'https://estilo-dorado-api.onrender.com/api',
   );
 
   /// Clave pública Culqi (sandbox). En prod: --dart-define=CULQI_PK=pk_live_...
