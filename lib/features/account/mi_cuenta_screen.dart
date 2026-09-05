@@ -21,6 +21,9 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
   final _telefonoController = TextEditingController();
   final _direccionController = TextEditingController();
   final _emailController = TextEditingController();
+  final _actualController = TextEditingController();
+  final _nuevaController = TextEditingController();
+  final _confirmaController = TextEditingController();
 
   final _authService = AuthService();
   bool _isLoading = true;
@@ -39,6 +42,9 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
     _telefonoController.dispose();
     _direccionController.dispose();
     _emailController.dispose();
+    _actualController.dispose();
+    _nuevaController.dispose();
+    _confirmaController.dispose();
     super.dispose();
   }
 
@@ -92,6 +98,41 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
         backgroundColor: ok ? Colors.green : Colors.red,
       ),
     );
+  }
+
+  Future<void> _cambiarClave() async {
+    final actual = _actualController.text;
+    final nueva = _nuevaController.text;
+    final conf = _confirmaController.text;
+    if (nueva.length < 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La nueva clave debe tener al menos 6 caracteres'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (nueva != conf) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La confirmación no coincide'), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    setState(() => _isSaving = true);
+    final res = await _authService.changePassword(actual: actual, nueva: nueva);
+    if (!mounted) return;
+    setState(() => _isSaving = false);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(res['success'] == true
+            ? 'Contraseña actualizada'
+            : (res['error']?.toString() ?? 'No se pudo cambiar. Si usas Google, recupera con el código del correo.')),
+        backgroundColor: res['success'] == true ? Colors.green : Colors.red,
+      ),
+    );
+    if (res['success'] == true) {
+      _actualController.clear();
+      _nuevaController.clear();
+      _confirmaController.clear();
+    }
   }
 
   @override
@@ -201,6 +242,57 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
+                    const Text(
+                      'Contraseña',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Si solo entras con Google, usa “¿Olvidaste tu contraseña?” en el login.',
+                      style: TextStyle(color: Colors.grey, fontSize: 13),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _actualController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Contraseña actual',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _nuevaController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Nueva (mín. 6)',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _confirmaController,
+                      obscureText: true,
+                      decoration: const InputDecoration(
+                        labelText: 'Confirmar nueva',
+                        border: OutlineInputBorder(),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 48,
+                      child: OutlinedButton(
+                        onPressed: _isSaving ? null : _cambiarClave,
+                        child: const Text('Cambiar contraseña'),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    TextButton(
+                      onPressed: () => context.push('/recuperar'),
+                      child: const Text('¿Olvidaste tu contraseña?'),
+                    ),
+                    const SizedBox(height: 24),
 
                     SizedBox(
                       width: double.infinity,

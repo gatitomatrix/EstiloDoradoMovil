@@ -211,15 +211,36 @@ class AuthService {
     }
   }
 
-  /// Laravel espera: email + contrasena (no password)
+  Future<Map<String, dynamic>> requestPasswordCode(String email) async {
+    try {
+      final response = await _api.post(ApiConfig.passwordForgot, {
+        'email': email.trim(),
+      });
+      return {
+        'success': true,
+        'message': response.data is Map
+            ? (response.data['message']?.toString() ??
+                'Si el correo está registrado, te enviamos un código.')
+            : 'Revisa tu correo',
+      };
+    } catch (e) {
+      debugPrint('Error requestPasswordCode: $e');
+      return {'success': false, 'error': errorMessage(e)};
+    }
+  }
+
+  /// Código de 6 dígitos + nueva clave
   Future<Map<String, dynamic>> resetPassword({
     required String email,
     required String newPassword,
+    String? codigo,
   }) async {
     try {
-      final response = await _api.post(ApiConfig.resetSimple, {
+      final response = await _api.post(ApiConfig.passwordReset, {
         'email': email.trim(),
-        'contrasena': newPassword,
+        'codigo': codigo ?? '',
+        'password': newPassword,
+        'password_confirmation': newPassword,
       });
 
       return {
@@ -234,6 +255,27 @@ class AuthService {
         'success': false,
         'error': errorMessage(e),
       };
+    }
+  }
+
+  Future<Map<String, dynamic>> changePassword({
+    required String actual,
+    required String nueva,
+  }) async {
+    try {
+      final response = await _api.post(ApiConfig.updatePassword, {
+        'password_actual': actual,
+        'password': nueva,
+        'password_confirmation': nueva,
+      });
+      return {
+        'success': true,
+        'message': response.data is Map
+            ? (response.data['message']?.toString() ?? 'Contraseña actualizada')
+            : 'Contraseña actualizada',
+      };
+    } catch (e) {
+      return {'success': false, 'error': errorMessage(e)};
     }
   }
 }

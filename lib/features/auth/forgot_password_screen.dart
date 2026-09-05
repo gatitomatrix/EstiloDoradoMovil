@@ -13,6 +13,7 @@ class ForgotPasswordScreen extends StatefulWidget {
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
+  final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmController = TextEditingController();
   final _authService = AuthService();
@@ -26,6 +27,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _codeController.dispose();
     _passwordController.dispose();
     _confirmController.dispose();
     super.dispose();
@@ -36,14 +38,14 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
 
     setState(() => _isLoading = true);
     try {
-      final exists = await _authService.checkEmail(_emailController.text.trim());
+      final res = await _authService.requestPasswordCode(_emailController.text.trim());
       if (!mounted) return;
       setState(() => _isLoading = false);
 
-      if (!exists) {
+      if (res['success'] != true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('No encontramos una cuenta con ese correo'),
+          SnackBar(
+            content: Text(res['error']?.toString() ?? 'No se pudo enviar'),
             backgroundColor: Colors.red,
           ),
         );
@@ -54,6 +56,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         _emailOk = _emailController.text.trim();
         _step = 2;
       });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Si el correo está registrado, te enviamos un código de 6 dígitos.'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
       setState(() => _isLoading = false);
@@ -69,6 +77,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _guardarPassword() async {
     if (!_formKey.currentState!.validate()) return;
 
+    if (_codeController.text.trim().length != 6) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Ingresa el código de 6 dígitos del correo'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (_passwordController.text != _confirmController.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -83,6 +101,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final result = await _authService.resetPassword(
       email: _emailOk!,
       newPassword: _passwordController.text,
+      codigo: _codeController.text.trim(),
     );
     if (!mounted) return;
     setState(() => _isLoading = false);
@@ -146,7 +165,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Ingresa el correo de tu cuenta para continuar.',
+          'Ingresa el correo. Te enviaremos un código de 6 dígitos (60 minutos).',
           style: TextStyle(color: Colors.grey, fontSize: 16),
         ),
         const SizedBox(height: 32),
@@ -179,7 +198,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             child: _isLoading
                 ? const CircularProgressIndicator(color: Colors.white)
                 : const Text(
-                    'Continuar',
+                    'Enviar código',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
           ),
@@ -209,6 +228,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           style: const TextStyle(color: Colors.grey, fontSize: 16),
         ),
         const SizedBox(height: 32),
+        TextFormField(
+          controller: _codeController,
+          keyboardType: TextInputType.number,
+          maxLength: 6,
+          decoration: const InputDecoration(
+            labelText: 'Código de 6 dígitos',
+            border: OutlineInputBorder(),
+            prefixIcon: Icon(Icons.pin_outlined),
+            counterText: '',
+          ),
+          validator: (v) {
+            if (v == null || v.trim().length != 6) return 'Código de 6 dígitos';
+            return null;
+          },
+        ),
+        const SizedBox(height: 16),
         TextFormField(
           controller: _passwordController,
           obscureText: _obscure1,

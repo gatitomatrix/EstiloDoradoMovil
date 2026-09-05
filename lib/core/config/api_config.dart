@@ -34,6 +34,8 @@ class ApiConfig {
   static const String logout = '/auth/logout';
   static const String updatePassword = '/auth/password';
   static const String checkEmail = '/auth/check-email';
+  static const String passwordForgot = '/auth/password/forgot';
+  static const String passwordReset = '/auth/password/reset';
   static const String resetSimple = '/auth/password/reset-simple';
 
   // Tienda
