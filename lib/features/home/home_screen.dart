@@ -547,7 +547,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           ListTile(
             leading: const Icon(Icons.smart_toy_outlined),
             title: const Text('Dori'),
-            subtitle: const Text('Hola, soy Dori. ¿Buscas un regalo?'),
+            subtitle: const Text('Hola, soy Dori. ¿Te ayudo a elegir un regalo?'),
             onTap: () {
               Navigator.pop(context);
               context.push('/asistente');
@@ -739,7 +739,7 @@ class _DoriNube extends StatelessWidget {
               ),
             ),
             Container(
-              constraints: const BoxConstraints(maxWidth: 210),
+              constraints: const BoxConstraints(maxWidth: 230),
               padding: const EdgeInsets.fromLTRB(12, 8, 8, 10),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -755,7 +755,7 @@ class _DoriNube extends StatelessWidget {
                 children: [
                   const Expanded(
                     child: Text(
-                      'Hola, soy Dori.\n¿Te ayudo a elegir un regalo?',
+                      'Hola, soy Dori.\n¿Te ayudo a elegir un regalo?\nDime qué buscas o para quién es.',
                       style: TextStyle(
                         fontSize: 13,
                         height: 1.25,

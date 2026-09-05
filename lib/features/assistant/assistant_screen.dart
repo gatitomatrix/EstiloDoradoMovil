@@ -85,7 +85,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     _msgs.add(
       _ChatMsg(
         text:
-            'Hola, soy Dori, tu asistente de Estilo Dorado. Dime qué buscas o para quién es el regalo (cumpleaños, papá, novia…) y te muestro opciones del catálogo.',
+            'Hola, soy Dori. ¿Te ayudo a elegir un regalo? Dime qué buscas o para quién es.',
         fromUser: false,
         driver: 'welcome',
       ),
