@@ -38,6 +38,8 @@ class OrderService {
     required String formaPago, // tarjeta | yape | efectivo
     String? culqiId,
     String? direccionEntrega,
+    String? envioTipo,
+    Map<String, String>? ubigeo,
     required List<ConfirmarItem> items,
     String? comprobante, // FA | BO
     InvoiceData? factura,
@@ -48,6 +50,12 @@ class OrderService {
       'direccion_entrega': direccionEntrega,
       'items': items.map((e) => e.toJson()).toList(),
     };
+    if (envioTipo != null && envioTipo.isNotEmpty) {
+      body['envio_tipo'] = envioTipo;
+    }
+    if (ubigeo != null) {
+      body['ubigeo'] = ubigeo;
+    }
     if (formaPago != 'efectivo') {
       body['culqi_id'] = culqiId;
       if (comprobante != null) body['comprobante'] = comprobante;

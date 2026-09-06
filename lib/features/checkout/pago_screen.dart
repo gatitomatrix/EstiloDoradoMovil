@@ -215,6 +215,14 @@ class _PagoScreenState extends State<PagoScreen> {
         formaPago: method,
         culqiId: culqiId,
         direccionEntrega: checkout.direccionEntrega,
+        envioTipo: checkout.address?.envioTipo,
+        ubigeo: checkout.address == null
+            ? null
+            : {
+                'departamento': checkout.address!.departamento,
+                'provincia': checkout.address!.provincia,
+                'distrito': checkout.address!.distrito,
+              },
         items: _itemsFromCart(cart),
         comprobante: tipo,
         factura: tipo == 'FA' ? pay.invoice : null,
