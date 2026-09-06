@@ -118,6 +118,40 @@ class _PagoScreenState extends State<PagoScreen> {
       .map((i) => ConfirmarItem(idProducto: i.id, cantidad: i.cantidad))
       .toList();
 
+  Future<void> _autocompletarRuc(String ruc, [void Function(VoidCallback fn)? refresh]) async {
+    final digits = ruc.replaceAll(RegExp(r'\D'), '');
+    if (digits.length != 11) return;
+    try {
+      final d = await _order.consultaRuc(digits);
+      if (!mounted || d == null) {
+        if (mounted) _toast('RUC no encontrado. Completa a mano.');
+        return;
+      }
+      _facRazon.text = (d['razon_social'] ?? '').toString();
+      _facDir.text = (d['direccion'] ?? '').toString();
+      final depName = (d['departamento'] ?? '').toString();
+      String? dep;
+      for (final x in _deps) {
+        if (x.toLowerCase() == depName.toLowerCase()) dep = x;
+      }
+      void apply() => _facDep = dep;
+      if (refresh != null) {
+        refresh(apply);
+      } else {
+        setState(apply);
+      }
+      if (dep != null) await _loadProvs(dep, forFactura: true);
+      if (!mounted) return;
+      refresh?.call(() {});
+      final estado = (d['estado'] ?? '').toString();
+      _toast(estado.isNotEmpty && estado.toUpperCase() != 'ACTIVO'
+          ? 'RUC $estado. Revisa y elige provincia/distrito.'
+          : 'Datos del RUC cargados. Elige provincia y distrito.');
+    } catch (_) {
+      if (mounted) _toast('No se pudo consultar el RUC. Completa a mano.');
+    }
+  }
+
   Future<void> _pagarEfectivo() async {
     if (_submitting) return;
     final checkout = context.read<CheckoutProvider>();
@@ -397,8 +431,14 @@ class _PagoScreenState extends State<PagoScreen> {
                         controller: _facRuc,
                         keyboardType: TextInputType.number,
                         inputFormatters: digitsMax(11),
+                        onChanged: (v) {
+                          if (v.replaceAll(RegExp(r'\D'), '').length == 11) {
+                            _autocompletarRuc(v, setModal);
+                          }
+                        },
                         decoration: const InputDecoration(
                           labelText: 'RUC',
+                          helperText: 'Al completar 11 dígitos se busca razón social y dirección',
                           border: OutlineInputBorder(),
                         ),
                       ),

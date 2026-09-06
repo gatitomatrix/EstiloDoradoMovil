@@ -33,6 +33,15 @@ class OrderService {
     return e.toString();
   }
 
+  Future<Map<String, dynamic>?> consultaRuc(String ruc) async {
+    final res = await _api.get('/consulta-ruc/$ruc');
+    final data = res.data;
+    if (data is Map && data['ok'] == true && data['data'] is Map) {
+      return Map<String, dynamic>.from(data['data'] as Map);
+    }
+    return null;
+  }
+
   /// POST /pedidos/confirmar — mismo contrato que Angular OrderService
   Future<ConfirmarRes> confirmar({
     required String formaPago, // tarjeta | yape | efectivo
