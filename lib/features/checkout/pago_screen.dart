@@ -601,13 +601,12 @@ class _PagoScreenState extends State<PagoScreen> {
             ),
           if (checkout.canCash)
             _infoBanner(
-              icon: Icons.payments_outlined,
-              title: '¿Efectivo (retiro en tienda)?',
+              icon: Icons.storefront_outlined,
+              title: 'Retiro en tienda',
               body:
-                  'Si eliges retiro en tienda puedes pagar en efectivo al recoger. '
-                  'No se emiten comprobantes electrónicos (PDF/XML/CDR) en esta modalidad; '
-                  'si lo necesitas, solicítalo en tienda. '
-                  'El plazo máximo de recojo es de 1 a 2 días. Transcurrido ese tiempo, el pedido se cancela para evitar inconvenientes.\n'
+                  'Puedes pagar en efectivo al recoger o ahora con Culqi (Yape o tarjeta) y pasar a recoger. '
+                  'El plazo máximo de recojo es de 1 a 2 días. Pasado ese tiempo el pedido se cancela. '
+                  'Si pagas con Culqi emitimos boleta o factura. Si pagas en efectivo, el comprobante se solicita en tienda.\n'
                   '📍 Recoge en: ${TarifaEnvio.direccionTienda}',
             ),
           const SizedBox(height: 8),
@@ -727,6 +726,7 @@ class _PagoScreenState extends State<PagoScreen> {
               title: 'Efectivo (retiro en tienda)',
               icon: Icons.payments_outlined,
             ),
+          if (_method != 'efectivo') ...[
           const SizedBox(height: 12),
           Card(
             child: Padding(
@@ -760,25 +760,14 @@ class _PagoScreenState extends State<PagoScreen> {
                     )
                   else
                     const Text(
-                      'Para Yape/tarjeta se pedirá boleta o factura al pagar.',
+                      'Al pagar con Yape o tarjeta te pediremos boleta o factura antes de confirmar.',
                       style: TextStyle(color: Colors.black54),
                     ),
-                  Row(
-                    children: [
-                      TextButton(
-                        onPressed: () => _openDocForm('BO'),
-                        child: const Text('Boleta'),
-                      ),
-                      TextButton(
-                        onPressed: () => _openDocForm('FA'),
-                        child: const Text('Factura'),
-                      ),
-                    ],
-                  ),
                 ],
               ),
             ),
           ),
+          ],
           const SizedBox(height: 12),
           Card(
             child: Padding(
