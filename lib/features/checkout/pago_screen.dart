@@ -6,6 +6,7 @@ import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/providers/payment_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/services/order_service.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/utils/input_formatters.dart';
@@ -52,12 +53,16 @@ class _PagoScreenState extends State<PagoScreen> {
   List<String> _dists = [];
 
   String? _method; // yape | tarjeta | efectivo
+  bool _otroCorreo = false;
+  late final TextEditingController _correoPago;
 
   @override
   void initState() {
     super.initState();
     final pay = context.read<PaymentProvider>();
     pay.clearAll();
+    final email = context.read<AuthProvider>().user?['email']?.toString() ?? '';
+    _correoPago = TextEditingController(text: email);
     _ubigeo.getDepartamentos().then((d) {
       if (mounted) setState(() => _deps = d);
     });
@@ -76,6 +81,7 @@ class _PagoScreenState extends State<PagoScreen> {
     _facRuc.dispose();
     _facRazon.dispose();
     _facDir.dispose();
+    _correoPago.dispose();
     super.dispose();
   }
 
@@ -742,7 +748,51 @@ class _PagoScreenState extends State<PagoScreen> {
                   _sumRow('Entregas', checkout.fee),
                   const Divider(),
                   _sumRow('Total', total, bold: true),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Correo para el pago',
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  if (!_otroCorreo)
+                    Text(
+                      (context.watch<AuthProvider>().user?['email']?.toString() ?? '').isEmpty
+                          ? 'No hay correo de cuenta'
+                          : context.watch<AuthProvider>().user!['email'].toString(),
+                      style: const TextStyle(fontWeight: FontWeight.w600),
+                    )
+                  else
+                    TextField(
+                      controller: _correoPago,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: const InputDecoration(
+                        hintText: 'otro@correo.com',
+                        border: OutlineInputBorder(),
+                        isDense: true,
+                      ),
+                    ),
+                  CheckboxListTile(
+                    value: _otroCorreo,
+                    activeColor: _gold,
+                    contentPadding: EdgeInsets.zero,
+                    title: const Text(
+                      'Usar otro correo para este pago',
+                      style: TextStyle(fontSize: 14),
+                    ),
+                    onChanged: (v) {
+                      setState(() {
+                        _otroCorreo = v ?? false;
+                        if (_otroCorreo && _correoPago.text.trim().isEmpty) {
+                          _correoPago.text =
+                              context.read<AuthProvider>().user?['email']?.toString() ?? '';
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 8),
                   SizedBox(
                     width: double.infinity,
                     height: 52,
