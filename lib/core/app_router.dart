@@ -43,6 +43,18 @@ class AppRouter {
     return next;
   }
 
+  /// Tras crear cuenta: siempre la tienda, salvo que viniera del checkout.
+  static String resolvePostRegisterRoute(String? next) {
+    if (next == null || next.isEmpty) return '/home';
+    if (next.startsWith('/entrega') ||
+        next.startsWith('/pago') ||
+        next.startsWith('/carrito') ||
+        next.startsWith('/confirmar-entrega')) {
+      return next;
+    }
+    return '/home';
+  }
+
   static final RouteObserver<ModalRoute<void>> routeObserver =
       RouteObserver<ModalRoute<void>>();
 

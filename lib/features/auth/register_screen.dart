@@ -90,7 +90,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      final next = AppRouter.resolvePostLoginRoute(auth.nextRouteAfterLogin);
+      final next = AppRouter.resolvePostRegisterRoute(auth.nextRouteAfterLogin);
       auth.clearNextRouteAfterLogin();
       context.go(next);
     } else {
@@ -134,7 +134,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await cart.bindUser(id);
       if (!mounted) return;
       setState(() => _googleLoading = false);
-      final next = AppRouter.resolvePostLoginRoute(auth.nextRouteAfterLogin);
+      final next = AppRouter.resolvePostRegisterRoute(auth.nextRouteAfterLogin);
       auth.clearNextRouteAfterLogin();
       context.go(next);
       return;
