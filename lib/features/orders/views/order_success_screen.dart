@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/checkout_models.dart';
 import '../../../core/utils/tarifa_envio.dart';
+import '../../../core/utils/file_url.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -40,7 +41,7 @@ class OrderSuccessScreen extends StatelessWidget {
       );
       return;
     }
-    final uri = Uri.tryParse(url);
+    final uri = Uri.tryParse(resolvePublicUrl(url) ?? '');
     if (uri == null) return;
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && context.mounted) {

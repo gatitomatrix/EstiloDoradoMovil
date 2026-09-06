@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/models/checkout_models.dart';
+import '../../core/utils/file_url.dart';
 import '../../core/services/order_service.dart';
 import '../../core/utils/tarifa_envio.dart';
 
@@ -100,7 +101,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
       );
       return;
     }
-    final uri = Uri.tryParse(url);
+    final uri = Uri.tryParse(resolvePublicUrl(url) ?? '');
     if (uri == null) return;
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {

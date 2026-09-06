@@ -30,6 +30,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   bool _stepMap = false;
   String _fase = 'ubigeo';
   bool _quiereDomicilio = false;
+  bool _listo = false;
   ResultadoAgencias? _agenciasRes;
   AgenciaShalom? _agenciaSel;
   bool _loadingGeo = false;
@@ -60,9 +61,10 @@ class _EntregaScreenState extends State<EntregaScreen> {
       final c = context.read<CheckoutProvider>();
       if (c.consumeEditAddress()) {
         _openExpress();
-      } else {
+      } else if (c.mode != DeliveryMode.storePickup) {
         c.setStorePickup();
       }
+      if (mounted) setState(() => _listo = true);
     });
   }
 
@@ -492,7 +494,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 fee: checkout.fee,
                 discount: checkout.discount,
                 total: total,
-                enabled: checkout.mode != DeliveryMode.none,
+                enabled: _listo && checkout.mode != DeliveryMode.none,
                 buttonLabel: checkout.mode == DeliveryMode.storePickup || checkout.envioListo
                     ? 'Ir a pagar'
                     : 'Elegir lugar de envío',
