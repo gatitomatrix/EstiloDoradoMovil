@@ -170,6 +170,13 @@ class _PagoScreenState extends State<PagoScreen> {
       return;
     }
 
+    final cuenta = context.read<AuthProvider>().user?['email']?.toString() ?? '';
+    final correo = _otroCorreo ? _correoPago.text.trim() : cuenta.trim();
+    if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(correo)) {
+      _toast('Indica un correo válido para el pago.');
+      return;
+    }
+
     // Validar UI del método
     if (method == 'yape') {
       final phoneOk = RegExp(r'^\+51 9\d{8}$').hasMatch(_yapePhone.text.trim());
