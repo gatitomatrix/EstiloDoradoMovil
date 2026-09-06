@@ -7,6 +7,7 @@ class CartItem {
   final int id;
   final String nombre;
   final double precio;
+  final double precioLista;
   final String imagenUrl;
   int stockMax;
   int cantidad;
@@ -15,15 +16,19 @@ class CartItem {
     required this.id,
     required this.nombre,
     required this.precio,
+    this.precioLista = 0,
     required this.imagenUrl,
     this.stockMax = 99,
     this.cantidad = 1,
   });
 
+  double get lista => precioLista > precio ? precioLista : precio;
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'nombre': nombre,
         'precio': precio,
+        'precioLista': lista,
         'imagenUrl': imagenUrl,
         'stockMax': stockMax,
         'cantidad': cantidad,
@@ -33,6 +38,10 @@ class CartItem {
         id: int.tryParse(j['id']?.toString() ?? '0') ?? 0,
         nombre: j['nombre']?.toString() ?? '',
         precio: double.tryParse(j['precio']?.toString() ?? '0') ?? 0,
+        precioLista: double.tryParse(
+              (j['precioLista'] ?? j['precio'])?.toString() ?? '0',
+            ) ??
+            0,
         imagenUrl: j['imagenUrl']?.toString() ?? '',
         stockMax: int.tryParse(j['stockMax']?.toString() ?? '99') ?? 99,
         cantidad: int.tryParse(j['cantidad']?.toString() ?? '1') ?? 1,
@@ -43,12 +52,14 @@ class CartItem {
     int? stockMax,
     String? nombre,
     double? precio,
+    double? precioLista,
     String? imagenUrl,
   }) =>
       CartItem(
         id: id,
         nombre: nombre ?? this.nombre,
         precio: precio ?? this.precio,
+        precioLista: precioLista ?? this.precioLista,
         imagenUrl: imagenUrl ?? this.imagenUrl,
         stockMax: stockMax ?? this.stockMax,
         cantidad: cantidad ?? this.cantidad,
@@ -68,6 +79,11 @@ class CartProvider extends ChangeNotifier {
 
   double get subtotal =>
       _items.fold(0, (sum, item) => sum + (item.precio * item.cantidad));
+
+  double get listado =>
+      _items.fold(0, (sum, item) => sum + (item.lista * item.cantidad));
+
+  double get descuentos => (listado - subtotal).clamp(0, double.infinity);
 
   double get total => subtotal;
 
@@ -137,6 +153,7 @@ class CartProvider extends ChangeNotifier {
           id: g.id,
           nombre: g.nombre,
           precio: g.precio,
+          precioLista: g.precioLista,
           imagenUrl: g.imagenUrl,
           stockMax: max,
           cantidad: g.cantidad.clamp(1, max),
@@ -237,6 +254,7 @@ class CartProvider extends ChangeNotifier {
       id: item.id,
       nombre: item.nombre,
       precio: item.precio,
+      precioLista: item.precioLista,
       imagenUrl: item.imagenUrl,
       stockMax: max,
       cantidad: qty,

@@ -113,6 +113,15 @@ class _CartScreenState extends State<CartScreen> {
                 children: [
                   Text(item.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
                   const SizedBox(height: 4),
+                  if (item.lista > item.precio + 0.009)
+                    Text(
+                      'S/ ${item.lista.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 12,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
                   Text(
                     'S/ ${item.precio.toStringAsFixed(2)}  ·  stock ${item.stockMax}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 13),
@@ -206,11 +215,24 @@ class _CartScreenState extends State<CartScreen> {
                 style: const TextStyle(fontSize: 16),
               ),
               Text(
-                'S/ ${cartProvider.subtotal.toStringAsFixed(2)}',
+                'S/ ${cartProvider.listado.toStringAsFixed(2)}',
                 style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
             ],
           ),
+          if (cartProvider.descuentos > 0.009) ...[
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Descuentos * Promoción', style: TextStyle(fontSize: 16)),
+                Text(
+                  '− S/ ${cartProvider.descuentos.toStringAsFixed(2)}',
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Colors.green),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: 8),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,

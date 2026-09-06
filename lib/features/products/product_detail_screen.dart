@@ -84,6 +84,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         id: product.id,
         nombre: product.nombre,
         precio: product.precioVenta,
+        precioLista: product.precioLista,
         imagenUrl: product.imagenUrl ?? '',
         stockMax: product.stock > 0 ? product.stock : 0,
         cantidad: 1,
