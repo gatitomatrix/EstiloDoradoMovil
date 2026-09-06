@@ -56,8 +56,12 @@ class _EntregaScreenState extends State<EntregaScreen> {
     _numCtrl.addListener(_saveDraft);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreDraft();
-      if (context.read<CheckoutProvider>().consumeEditAddress()) {
+      if (!mounted) return;
+      final c = context.read<CheckoutProvider>();
+      if (c.consumeEditAddress()) {
         _openExpress();
+      } else {
+        c.setStorePickup();
       }
     });
   }
