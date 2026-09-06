@@ -9,6 +9,7 @@ import '../../core/providers/product_provider.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
 import '../../core/utils/whatsapp.dart';
+import '../../core/services/product_service.dart';
 
 class ProductDetailScreen extends StatefulWidget {
   final int productId;
@@ -22,6 +23,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   Product? _product;
   bool _loading = true;
   String? _error;
+  String _motivoDescuento = '';
 
   @override
   void initState() {
@@ -48,8 +50,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         return;
       }
       cart.syncStockMax(p.id, p.stock);
+      String motivo = '';
+      if (p.enOferta) {
+        try {
+          final promo = await ProductService().getPromoActiva();
+          if (promo.activa && promo.texto.isNotEmpty) {
+            motivo = promo.texto;
+          } else {
+            motivo = 'Oferta de este producto.';
+          }
+        } catch (_) {
+          motivo = 'Oferta de este producto.';
+        }
+      }
+      if (!mounted) return;
       setState(() {
         _product = p;
+        _motivoDescuento = motivo;
         _loading = false;
       });
     } catch (e) {
@@ -206,6 +223,18 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                       color: Color(0xFFD4AF37),
                     ),
                   ),
+                  if (_motivoDescuento.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Text(
+                      _motivoDescuento,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF8A6D1D),
+                        height: 1.35,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),

@@ -39,6 +39,7 @@ class ApiConfig {
   // Tienda
   static const String productos = '/productos';
   static const String categorias = '/categorias';
+  static const String promocionActiva = '/promocion-activa';
 
   /// Chatbot / asistente IA (Ollama o Gemini vía Laravel)
   static const String asistente = '/asistente';

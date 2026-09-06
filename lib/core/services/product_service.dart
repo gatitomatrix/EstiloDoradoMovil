@@ -49,4 +49,19 @@ class ProductService {
       return null;
     }
   }
+
+  Future<({bool activa, String texto, double porcentaje})> getPromoActiva() async {
+    try {
+      final response = await _api.get(ApiConfig.promocionActiva);
+      final data = response.data;
+      if (data is Map) {
+        return (
+          activa: data['activa'] == true,
+          texto: (data['texto'] ?? '').toString().trim(),
+          porcentaje: (data['porcentaje'] as num?)?.toDouble() ?? 0,
+        );
+      }
+    } catch (_) {}
+    return (activa: false, texto: '', porcentaje: 0);
+  }
 }
