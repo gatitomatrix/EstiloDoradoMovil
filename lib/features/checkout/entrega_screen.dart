@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
+import '../../core/providers/auth_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
 import '../../core/utils/tarifa_envio.dart';
@@ -44,6 +45,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   String? _dist;
   final _viaCtrl = TextEditingController();
   final _numCtrl = TextEditingController();
+  final _telCtrl = TextEditingController();
   double? _lat;
   double? _lng;
 
@@ -55,10 +57,24 @@ class _EntregaScreenState extends State<EntregaScreen> {
     });
     _viaCtrl.addListener(_saveDraft);
     _numCtrl.addListener(_saveDraft);
+    _telCtrl.addListener(() {
+      if (!mounted) return;
+      context.read<CheckoutProvider>().setTelefono(_telCtrl.text);
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreDraft();
       if (!mounted) return;
       final c = context.read<CheckoutProvider>();
+      if (c.telefono.isEmpty) {
+        final raw = context.read<AuthProvider>().user?['telefono']?.toString() ?? '';
+        final d = raw.replaceAll(RegExp(r'\D'), '');
+        if (d.isNotEmpty) {
+          c.setTelefono(d);
+          _telCtrl.text = d;
+        }
+      } else if (_telCtrl.text.isEmpty && c.telefono.isNotEmpty) {
+        _telCtrl.text = c.telefono;
+      }
       if (c.consumeEditAddress()) {
         _openExpress();
       } else if (c.mode != DeliveryMode.storePickup) {
@@ -72,6 +88,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   void dispose() {
     _viaCtrl.dispose();
     _numCtrl.dispose();
+    _telCtrl.dispose();
     super.dispose();
   }
 
@@ -488,13 +505,37 @@ class _EntregaScreenState extends State<EntregaScreen> {
                   ),
                 ),
               ],
+              if (checkout.mode == DeliveryMode.express) ...[
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _telCtrl,
+                  keyboardType: TextInputType.phone,
+                  maxLength: 9,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  decoration: InputDecoration(
+                    labelText: 'Celular de contacto',
+                    prefixText: '+51 ',
+                    hintText: '9xxxxxxxx',
+                    counterText: '',
+                    helperText: 'Lo usará Shalom o el motorizado',
+                    errorText: checkout.envioListo && !checkout.telefonoOk
+                        ? '9 dígitos, empieza con 9'
+                        : null,
+                    border: const OutlineInputBorder(),
+                  ),
+                ),
+              ],
               const SizedBox(height: 20),
               _SummaryCard(
                 subtotal: subtotal,
                 fee: checkout.fee,
                 discount: checkout.discount,
                 total: total,
-                enabled: _listo && checkout.mode != DeliveryMode.none,
+                enabled: _listo &&
+                    checkout.mode != DeliveryMode.none &&
+                    (checkout.mode != DeliveryMode.express ||
+                        !checkout.envioListo ||
+                        checkout.telefonoOk),
                 buttonLabel: checkout.mode == DeliveryMode.storePickup || checkout.envioListo
                     ? 'Ir a pagar'
                     : 'Elegir lugar de envío',
@@ -504,6 +545,15 @@ class _EntregaScreenState extends State<EntregaScreen> {
                     return;
                   }
                   if (checkout.envioListo) {
+                    if (!checkout.telefonoOk) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Indica un celular de 9 dígitos (empieza con 9)'),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
                     context.push('/pago');
                     return;
                   }

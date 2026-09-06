@@ -135,6 +135,7 @@ class _PagoScreenState extends State<PagoScreen> {
       final res = await _order.confirmar(
         formaPago: 'efectivo',
         direccionEntrega: checkout.direccionEntrega,
+        telefono: checkout.telefono.isEmpty ? null : checkout.telefono,
         items: _itemsFromCart(cart),
       );
       final total = checkout.totalWith(cart.subtotal);
@@ -221,6 +222,7 @@ class _PagoScreenState extends State<PagoScreen> {
         formaPago: method,
         culqiId: culqiId,
         direccionEntrega: checkout.direccionEntrega,
+        telefono: checkout.telefono.isEmpty ? null : checkout.telefono,
         envioTipo: checkout.address?.envioTipo,
         ubigeo: checkout.address == null
             ? null

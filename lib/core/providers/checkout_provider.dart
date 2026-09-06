@@ -14,6 +14,7 @@ class CheckoutProvider extends ChangeNotifier {
   double fee = 0;
   double discount = 0;
   bool pendingEditAddress = false;
+  String telefono = '';
 
   double totalWith(double subtotal) => subtotal + fee - discount;
 
@@ -32,8 +33,11 @@ class CheckoutProvider extends ChangeNotifier {
     return false;
   }
 
+  bool get telefonoOk => RegExp(r'^9\d{8}$').hasMatch(telefono);
+
   bool get canPay =>
-      mode == DeliveryMode.storePickup || (mode == DeliveryMode.express && envioListo);
+      mode == DeliveryMode.storePickup ||
+      (mode == DeliveryMode.express && envioListo && telefonoOk);
 
   bool get canCash => mode == DeliveryMode.storePickup;
 
@@ -68,6 +72,8 @@ class CheckoutProvider extends ChangeNotifier {
       }
       fee = (j['fee'] as num?)?.toDouble() ?? 0;
       discount = (j['discount'] as num?)?.toDouble() ?? 0;
+      telefono = (j['telefono']?.toString() ?? '').replaceAll(RegExp(r'\D'), '');
+      if (telefono.length > 9) telefono = telefono.substring(0, 9);
       notifyListeners();
     } catch (_) {}
   }
@@ -83,6 +89,7 @@ class CheckoutProvider extends ChangeNotifier {
           'draft': draft?.toJson(),
           'fee': fee,
           'discount': discount,
+          'telefono': telefono,
         }),
       );
     } catch (_) {}
@@ -98,10 +105,20 @@ class CheckoutProvider extends ChangeNotifier {
     pendingEditAddress = false;
     return true;
   }
+
+  void setStorePickup() {
     mode = DeliveryMode.storePickup;
     address = DeliveryAddress.storePickup();
     fee = 0;
     discount = 0;
+    notifyListeners();
+    _persist();
+  }
+
+  void setTelefono(String raw) {
+    var d = raw.replaceAll(RegExp(r'\D'), '');
+    if (d.length > 9) d = d.substring(0, 9);
+    telefono = d;
     notifyListeners();
     _persist();
   }
