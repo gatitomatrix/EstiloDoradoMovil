@@ -18,9 +18,9 @@ class ConfirmarEntregaScreen extends StatelessWidget {
     final checkout = context.watch<CheckoutProvider>();
     final subtotal = cart.subtotal;
     final expressTarifa = TarifaEnvio.estimar(
-      departamento: checkout.address?.departamento,
-      provincia: checkout.address?.provincia,
-      distrito: checkout.address?.distrito,
+      departamento: checkout.savedExpress?.departamento ?? checkout.address?.departamento,
+      provincia: checkout.savedExpress?.provincia ?? checkout.address?.provincia,
+      distrito: checkout.savedExpress?.distrito ?? checkout.address?.distrito,
     );
 
     // No redirigir en post-frame de forma agresiva (puede pisar otras pantallas).
@@ -68,7 +68,11 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                   child: ListTile(
                     leading: const Icon(Icons.location_on, color: _gold),
                     title: const Text('Dirección'),
-                    subtitle: Text(checkout.address?.display ?? '–'),
+                    subtitle: Text(
+                      checkout.mode == DeliveryMode.storePickup
+                          ? TarifaEnvio.textoRecojo
+                          : (checkout.savedExpress?.display ?? checkout.address?.display ?? '–'),
+                    ),
                     trailing: TextButton(
                       onPressed: () => context.push('/entrega'),
                       child: const Text('Cambiar'),
@@ -79,7 +83,21 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                 Card(
                   child: Column(
                     children: [
-                      RadioListTile<DeliveryMode>(
+                      Container(
+                        decoration: BoxDecoration(
+                          color: checkout.mode == DeliveryMode.storePickup
+                              ? _gold.withValues(alpha: 0.12)
+                              : null,
+                          border: Border(
+                            left: BorderSide(
+                              color: checkout.mode == DeliveryMode.storePickup
+                                  ? _gold
+                                  : Colors.transparent,
+                              width: 4,
+                            ),
+                          ),
+                        ),
+                        child: RadioListTile<DeliveryMode>(
                         value: DeliveryMode.storePickup,
                         groupValue: checkout.mode,
                         activeColor: _gold,
@@ -90,14 +108,38 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                         subtitle: Text(
                           'Recoge en tienda de inmediato y de forma segura.\n📍 ${TarifaEnvio.direccionTienda}',
                         ),
-                        secondary: const Text(
-                          'S/ 0',
-                          style: TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                        secondary: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'S/ 0',
+                              style: TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                            ),
+                            if (checkout.mode == DeliveryMode.storePickup) ...[
+                              const SizedBox(width: 6),
+                              const Icon(Icons.check_circle, color: _gold),
+                            ],
+                          ],
                         ),
                         onChanged: (_) => checkout.setMode(DeliveryMode.storePickup),
                       ),
+                      ),
                       const Divider(height: 1),
-                      RadioListTile<DeliveryMode>(
+                      Container(
+                        decoration: BoxDecoration(
+                          color: checkout.mode == DeliveryMode.express
+                              ? _gold.withValues(alpha: 0.12)
+                              : null,
+                          border: Border(
+                            left: BorderSide(
+                              color: checkout.mode == DeliveryMode.express
+                                  ? _gold
+                                  : Colors.transparent,
+                              width: 4,
+                            ),
+                          ),
+                        ),
+                        child: RadioListTile<DeliveryMode>(
                         value: DeliveryMode.express,
                         groupValue: checkout.mode,
                         activeColor: _gold,
@@ -106,15 +148,24 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(
-                          expressTarifa.etiqueta,
+                          'Solo Lima – Callao, Huancayo y Pasco.\n${expressTarifa.etiqueta}',
                         ),
-                        secondary: Text(
-                          'S/ ${expressTarifa.costo.toStringAsFixed(0)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                        secondary: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'S/ ${expressTarifa.costo.toStringAsFixed(0)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, color: _gold),
+                            ),
+                            if (checkout.mode == DeliveryMode.express) ...[
+                              const SizedBox(width: 6),
+                              const Icon(Icons.check_circle, color: _gold),
+                            ],
+                          ],
                         ),
                         onChanged: (_) {
-                          if (checkout.address == null ||
-                              checkout.address!.via == 'Retiro en tienda') {
+                          final saved = checkout.savedExpress;
+                          if (saved == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text('Primero ingresa una dirección de envío'),
@@ -123,8 +174,9 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                             context.push('/entrega');
                             return;
                           }
-                          checkout.setMode(DeliveryMode.express);
+                          checkout.setExpress(saved);
                         },
+                      ),
                       ),
                     ],
                   ),

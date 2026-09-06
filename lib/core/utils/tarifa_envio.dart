@@ -10,7 +10,7 @@ class TarifaEnvio {
   });
 
   static const coberturaTexto =
-      'Envíos a Lima Metropolitana y Callao; Cerro de Pasco (provincia Pasco); Huancayo (Chilca, El Tambo y Huancayo). Otras ciudades: recojo en tienda.';
+      'Envíos solo a Lima – Callao, Huancayo y Pasco. Otras ciudades: recojo en tienda.';
 
   static const _huancayoDistritos = ['CHILCA', 'EL TAMBO', 'HUANCAYO'];
 
@@ -83,20 +83,20 @@ class TarifaEnvio {
       return const TarifaEnvio(
         costo: 8,
         zona: 'huancayo',
-        etiqueta: 'Huancayo · estimado Shalom',
+        etiqueta: 'Huancayo · S/ 8',
       );
     }
     if (d.contains('PASCO') || p == 'PASCO') {
       return const TarifaEnvio(
-        costo: 14,
+        costo: 4,
         zona: 'pasco',
-        etiqueta: 'Pasco / Cerro de Pasco · estimado Shalom',
+        etiqueta: 'Pasco local · S/ 4',
       );
     }
     return const TarifaEnvio(
-      costo: 18,
+      costo: 10,
       zona: 'lima',
-      etiqueta: 'Lima Metropolitana / Callao · estimado Shalom',
+      etiqueta: 'Lima – Callao · S/ 10',
     );
   }
 

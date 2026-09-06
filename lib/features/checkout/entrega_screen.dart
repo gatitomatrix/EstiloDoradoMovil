@@ -353,8 +353,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
               _DeliveryOption(
                 icon: Icons.local_shipping_outlined,
                 title: 'Envío Express',
-                subtitle:
-                    'Lima Metropolitana y Callao; Pasco (todos sus distritos); Huancayo (Chilca, El Tambo y Huancayo).',
+                subtitle: 'Solo Lima – Callao, Huancayo y Pasco.',
                 selected: checkout.mode == DeliveryMode.express,
                 onTap: _openExpress,
               ),

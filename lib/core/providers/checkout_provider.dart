@@ -20,9 +20,17 @@ class CheckoutProvider extends ChangeNotifier {
 
   bool get canCash => mode == DeliveryMode.storePickup;
 
+  DeliveryAddress? get savedExpress {
+    bool ok(DeliveryAddress? a) =>
+        a != null && a.via.isNotEmpty && a.via != 'Retiro en tienda';
+    if (ok(draft)) return draft;
+    if (ok(address)) return address;
+    return null;
+  }
+
   String get direccionEntrega {
     if (mode == DeliveryMode.storePickup) return TarifaEnvio.textoRecojo;
-    return address?.display ?? '';
+    return savedExpress?.display ?? address?.display ?? '';
   }
 
   CheckoutProvider() {
@@ -129,14 +137,16 @@ class CheckoutProvider extends ChangeNotifier {
       discount = 0;
       address = DeliveryAddress.storePickup();
     } else if (m == DeliveryMode.express) {
-      final a = address;
-      fee = a == null
-          ? 25
-          : TarifaEnvio.estimar(
-              departamento: a.departamento,
-              provincia: a.provincia,
-              distrito: a.distrito,
-            ).costo;
+      final saved = savedExpress;
+      if (saved != null) {
+        address = saved;
+        draft = saved;
+        fee = TarifaEnvio.estimar(
+          departamento: saved.departamento,
+          provincia: saved.provincia,
+          distrito: saved.distrito,
+        ).costo;
+      }
       discount = 0;
     }
     notifyListeners();
