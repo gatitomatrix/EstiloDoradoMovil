@@ -565,7 +565,10 @@ class _PagoScreenState extends State<PagoScreen> {
               ),
               subtitle: Text(checkout.direccionEntrega),
               trailing: TextButton(
-                onPressed: () => context.push('/entrega'),
+                onPressed: () {
+                  context.read<CheckoutProvider>().requestEditAddress();
+                  context.go('/entrega');
+                },
                 child: const Text('Cambiar'),
               ),
             ),

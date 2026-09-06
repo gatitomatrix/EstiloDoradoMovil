@@ -13,6 +13,7 @@ class CheckoutProvider extends ChangeNotifier {
   DeliveryAddress? draft;
   double fee = 0;
   double discount = 0;
+  bool pendingEditAddress = false;
 
   double totalWith(double subtotal) => subtotal + fee - discount;
 
@@ -87,7 +88,16 @@ class CheckoutProvider extends ChangeNotifier {
     } catch (_) {}
   }
 
-  void setStorePickup() {
+  void requestEditAddress() {
+    pendingEditAddress = true;
+    notifyListeners();
+  }
+
+  bool consumeEditAddress() {
+    if (!pendingEditAddress) return false;
+    pendingEditAddress = false;
+    return true;
+  }
     mode = DeliveryMode.storePickup;
     address = DeliveryAddress.storePickup();
     fee = 0;

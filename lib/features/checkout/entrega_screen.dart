@@ -54,7 +54,12 @@ class _EntregaScreenState extends State<EntregaScreen> {
     });
     _viaCtrl.addListener(_saveDraft);
     _numCtrl.addListener(_saveDraft);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _restoreDraft());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _restoreDraft();
+      if (context.read<CheckoutProvider>().consumeEditAddress()) {
+        _openExpress();
+      }
+    });
   }
 
   @override
@@ -274,7 +279,6 @@ class _EntregaScreenState extends State<EntregaScreen> {
     if (_agenciaSel == null) return;
     if (_quiereDomicilio) {
       if (_viaCtrl.text.trim().isEmpty || _numCtrl.text.trim().isEmpty) {
-        setState(() => _fase = 'ubigeo');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Completa calle y número para el domicilio')),
         );
@@ -298,24 +302,35 @@ class _EntregaScreenState extends State<EntregaScreen> {
       return;
     }
     setState(() => _loadingGeo = true);
-    final q = [
-      _viaCtrl.text.trim(),
-      _numCtrl.text.trim(),
-      _dist,
-      _prov,
-      _dep,
-      'Perú',
-    ].where((e) => e != null && e.toString().isNotEmpty).join(', ');
+    final queries = [
+      [
+        _viaCtrl.text.trim(),
+        _numCtrl.text.trim(),
+        _dist,
+        _prov,
+        _dep,
+        'Perú',
+      ].where((e) => e != null && e.toString().isNotEmpty).join(', '),
+      [
+        _viaCtrl.text.trim(),
+        _dist,
+        _prov,
+        _dep,
+        'Perú',
+      ].where((e) => e != null && e.toString().isNotEmpty).join(', '),
+      [_dist, _prov, _dep, 'Perú']
+          .where((e) => e != null && e.toString().isNotEmpty)
+          .join(', '),
+    ];
 
-    final res = await _geo.searchAddress(q);
-    _lat = res?.lat ?? -12.06866;
-    _lng = res?.lon ?? -75.21027;
-
-    final rev = await _geo.reverseAddress(_lat!, _lng!);
-    if (rev != null) {
-      if ((rev['via'] ?? '').isNotEmpty) _viaCtrl.text = rev['via']!;
-      if ((rev['numero'] ?? '').isNotEmpty) _numCtrl.text = rev['numero']!;
+    ({double lat, double lon})? res;
+    for (final q in queries) {
+      res = await _geo.searchAddress(q);
+      if (res != null) break;
     }
+    final fb = _fallbackCoords();
+    _lat = res?.lat ?? fb.lat;
+    _lng = res?.lon ?? fb.lng;
 
     if (mounted) {
       setState(() {
@@ -324,6 +339,13 @@ class _EntregaScreenState extends State<EntregaScreen> {
         _fase = 'mapa';
       });
     }
+  }
+
+  ({double lat, double lng}) _fallbackCoords() {
+    final z = TarifaEnvio.zona(departamento: _dep, provincia: _prov, distrito: _dist);
+    if (z == 'lima') return (lat: -12.04637, lng: -77.04279);
+    if (z == 'pasco') return (lat: -10.66848, lng: -76.25688);
+    return (lat: -12.06866, lng: -75.21027);
   }
 
   void _confirmarYGuardar(CheckoutProvider checkout) {

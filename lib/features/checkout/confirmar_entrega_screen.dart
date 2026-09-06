@@ -77,7 +77,10 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                           : (checkout.savedExpress?.display ?? checkout.address?.display ?? '–'),
                     ),
                     trailing: TextButton(
-                      onPressed: () => context.push('/entrega'),
+                      onPressed: () {
+                        context.read<CheckoutProvider>().requestEditAddress();
+                        context.go('/entrega');
+                      },
                       child: const Text('Cambiar'),
                     ),
                   ),
