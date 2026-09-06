@@ -296,6 +296,21 @@ class _PagoScreenState extends State<PagoScreen> {
 
   Future<bool> _openDocForm(String tipo) async {
     final pay = context.read<PaymentProvider>();
+    final auth = context.read<AuthProvider>();
+    final checkout = context.read<CheckoutProvider>();
+    if (tipo == 'BO' && _bolNombres.text.trim().isEmpty) {
+      final u = auth.user;
+      final n = [u?['nombre'], u?['apellido']].whereType<String>().where((s) => s.trim().isNotEmpty).join(' ');
+      if (n.isNotEmpty) _bolNombres.text = n;
+      final addr = checkout.address;
+      if (_bolDir.text.trim().isEmpty) {
+        _bolDir.text = addr?.full ??
+            [addr?.via, addr?.numero, addr?.distrito].where((e) => e != null && e.toString().isNotEmpty).join(' ');
+      }
+      _bolDep ??= (addr?.departamento.isNotEmpty ?? false) ? addr!.departamento : null;
+      _bolProv ??= (addr?.provincia.isNotEmpty ?? false) ? addr!.provincia : null;
+      _bolDist ??= (addr?.distrito.isNotEmpty ?? false) ? addr!.distrito : null;
+    }
     final result = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
