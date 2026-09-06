@@ -443,11 +443,10 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 icon: Icons.local_shipping_outlined,
                 title: 'Envío',
                 subtitle: 'Shalom a agencia o domicilio. Pasco: solo domicilio S/ 5.',
-                selected: checkout.mode == DeliveryMode.express,
+                selected: checkout.mode == DeliveryMode.express && checkout.envioListo,
                 onTap: _openExpress,
               ),
-              if (checkout.mode == DeliveryMode.express &&
-                  checkout.address != null) ...[
+              if (checkout.envioListo) ...[
                 const SizedBox(height: 12),
                 Card(
                   child: ListTile(
@@ -467,16 +466,26 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 fee: checkout.fee,
                 discount: checkout.discount,
                 total: total,
-                enabled: checkout.canPay,
-                buttonLabel: checkout.mode == DeliveryMode.express
-                    ? 'Continuar'
-                    : 'Ir a pagar',
+                enabled: checkout.mode != DeliveryMode.none,
+                buttonLabel: checkout.mode == DeliveryMode.storePickup || checkout.envioListo
+                    ? 'Ir a pagar'
+                    : 'Elegir lugar de envío',
                 onPressed: () {
-                  if (checkout.mode == DeliveryMode.express) {
-                    context.push('/confirmar-entrega');
-                  } else {
+                  if (checkout.mode == DeliveryMode.storePickup) {
                     context.push('/pago');
+                    return;
                   }
+                  if (checkout.envioListo) {
+                    context.push('/pago');
+                    return;
+                  }
+                  _openExpress();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Elige agencia Shalom o envío a domicilio'),
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
                 },
               ),
               const SizedBox(height: 24),

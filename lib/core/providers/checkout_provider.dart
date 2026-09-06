@@ -16,17 +16,27 @@ class CheckoutProvider extends ChangeNotifier {
 
   double totalWith(double subtotal) => subtotal + fee - discount;
 
-  bool get canPay => mode == DeliveryMode.storePickup || mode == DeliveryMode.express;
+  bool get envioListo {
+    final a = address;
+    if (a == null || a.via == 'Retiro en tienda') return false;
+    if (a.departamento.isEmpty || a.provincia.isEmpty || a.distrito.isEmpty) {
+      return false;
+    }
+    if (a.envioTipo == 'AGENCIA') {
+      return (a.agenciaNombre ?? a.agenciaId ?? a.via).trim().isNotEmpty;
+    }
+    if (a.envioTipo == 'DOMICILIO') {
+      return a.via.trim().isNotEmpty;
+    }
+    return false;
+  }
+
+  bool get canPay =>
+      mode == DeliveryMode.storePickup || (mode == DeliveryMode.express && envioListo);
 
   bool get canCash => mode == DeliveryMode.storePickup;
 
-  DeliveryAddress? get savedExpress {
-    bool ok(DeliveryAddress? a) =>
-        a != null && a.via.isNotEmpty && a.via != 'Retiro en tienda';
-    if (ok(draft)) return draft;
-    if (ok(address)) return address;
-    return null;
-  }
+  DeliveryAddress? get savedExpress => envioListo ? address : null;
 
   String get direccionEntrega {
     if (mode == DeliveryMode.storePickup) return TarifaEnvio.textoRecojo;
