@@ -604,7 +604,8 @@ class _PagoScreenState extends State<PagoScreen> {
               body:
                   'Si eliges retiro en tienda puedes pagar en efectivo al recoger. '
                   'No se emiten comprobantes electrónicos (PDF/XML/CDR) en esta modalidad; '
-                  'si lo necesitas, solicítalo en tienda.\n'
+                  'si lo necesitas, solicítalo en tienda. '
+                  'El plazo máximo de recojo es de 1 a 2 días. Transcurrido ese tiempo, el pedido se cancela para evitar inconvenientes.\n'
                   '📍 Recoge en: ${TarifaEnvio.direccionTienda}',
             ),
           const SizedBox(height: 8),
