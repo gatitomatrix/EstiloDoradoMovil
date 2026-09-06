@@ -567,7 +567,7 @@ class _PagoScreenState extends State<PagoScreen> {
               title: Text(
                 checkout.mode == DeliveryMode.storePickup
                     ? 'Retiro en tienda'
-                    : 'Envío a domicilio',
+                    : 'Envío',
               ),
               subtitle: Text(checkout.direccionEntrega),
               trailing: TextButton(
@@ -592,10 +592,10 @@ class _PagoScreenState extends State<PagoScreen> {
           if (checkout.mode == DeliveryMode.express)
             _infoBanner(
               icon: Icons.local_shipping_outlined,
-              title: 'Envío Express',
+              title: 'Envío',
               body:
-                  'Tu pedido llegará en un plazo de 1 a 2 días a tu dirección. '
-                  'En envío express el pago es con Yape o tarjeta (Culqi).',
+                  'Tu pedido se envía por Shalom (agencia o domicilio). '
+                  'El pago es con Yape o tarjeta (Culqi).',
             ),
           if (checkout.canCash)
             _infoBanner(
