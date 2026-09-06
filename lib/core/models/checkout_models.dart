@@ -13,6 +13,10 @@ class DeliveryAddress {
   final String? full;
   final double? lat;
   final double? lng;
+  final String? envioTipo; // AGENCIA | DOMICILIO
+  final String? agenciaId;
+  final String? agenciaNombre;
+  final String? agenciaDireccion;
 
   const DeliveryAddress({
     required this.departamento,
@@ -23,6 +27,10 @@ class DeliveryAddress {
     this.full,
     this.lat,
     this.lng,
+    this.envioTipo,
+    this.agenciaId,
+    this.agenciaNombre,
+    this.agenciaDireccion,
   });
 
   String get display {
@@ -43,6 +51,10 @@ class DeliveryAddress {
         'full': display,
         'lat': lat,
         'lng': lng,
+        'envioTipo': envioTipo,
+        'agenciaId': agenciaId,
+        'agenciaNombre': agenciaNombre,
+        'agenciaDireccion': agenciaDireccion,
       };
 
   factory DeliveryAddress.fromJson(Map<String, dynamic> j) => DeliveryAddress(
@@ -54,6 +66,10 @@ class DeliveryAddress {
         full: j['full']?.toString(),
         lat: (j['lat'] as num?)?.toDouble(),
         lng: (j['lng'] as num?)?.toDouble(),
+        envioTipo: j['envioTipo']?.toString(),
+        agenciaId: j['agenciaId']?.toString(),
+        agenciaNombre: j['agenciaNombre']?.toString(),
+        agenciaDireccion: j['agenciaDireccion']?.toString(),
       );
 
   factory DeliveryAddress.storePickup() => const DeliveryAddress(

@@ -65,38 +65,60 @@ class TarifaEnvio {
         .toList();
   }
 
-  static TarifaEnvio estimar({
+  static String zona({
     String? departamento,
     String? provincia,
     String? distrito,
   }) {
     if (!cubre(departamento: departamento, provincia: provincia, distrito: distrito)) {
-      return const TarifaEnvio(
-        costo: 0,
-        zona: 'fuera',
-        etiqueta: 'Fuera de cobertura',
-      );
+      return 'fuera';
     }
     final d = _norm(departamento);
     final p = _norm(provincia);
-    if (d.contains('JUNIN') || p == 'HUANCAYO') {
-      return const TarifaEnvio(
-        costo: 8,
-        zona: 'huancayo',
-        etiqueta: 'Huancayo · S/ 8',
-      );
+    if (d.contains('PASCO') || p == 'PASCO') return 'pasco';
+    if (d.contains('JUNIN') || p == 'HUANCAYO') return 'huancayo';
+    return 'lima';
+  }
+
+  static bool usaShalom({String? departamento, String? provincia, String? distrito}) {
+    final z = zona(departamento: departamento, provincia: provincia, distrito: distrito);
+    return z == 'lima' || z == 'huancayo';
+  }
+
+  static TarifaEnvio costo({
+    String? departamento,
+    String? provincia,
+    String? distrito,
+    required String tipo, // AGENCIA | DOMICILIO
+  }) {
+    final z = zona(departamento: departamento, provincia: provincia, distrito: distrito);
+    if (z == 'fuera') {
+      return const TarifaEnvio(costo: 0, zona: 'fuera', etiqueta: 'Fuera de cobertura');
     }
-    if (d.contains('PASCO') || p == 'PASCO') {
-      return const TarifaEnvio(
-        costo: 4,
-        zona: 'pasco',
-        etiqueta: 'Pasco local · S/ 4',
-      );
+    if (z == 'pasco') {
+      return const TarifaEnvio(costo: 5, zona: 'pasco', etiqueta: 'Pasco · domicilio S/ 5 (sin Shalom)');
     }
-    return const TarifaEnvio(
-      costo: 10,
-      zona: 'lima',
-      etiqueta: 'Lima – Callao · S/ 10',
+    if (tipo == 'AGENCIA') {
+      final donde = z == 'huancayo' ? 'Huancayo' : 'Lima – Callao';
+      return TarifaEnvio(costo: 12, zona: z, etiqueta: '$donde · Shalom agencia S/ 12');
+    }
+    if (z == 'huancayo') {
+      return const TarifaEnvio(costo: 17, zona: 'huancayo', etiqueta: 'Huancayo · Shalom + domicilio S/ 12 + 5');
+    }
+    return const TarifaEnvio(costo: 22, zona: 'lima', etiqueta: 'Lima – Callao · Shalom + domicilio S/ 12 + 10');
+  }
+
+  static TarifaEnvio estimar({
+    String? departamento,
+    String? provincia,
+    String? distrito,
+  }) {
+    final z = zona(departamento: departamento, provincia: provincia, distrito: distrito);
+    return costo(
+      departamento: departamento,
+      provincia: provincia,
+      distrito: distrito,
+      tipo: z == 'pasco' ? 'DOMICILIO' : 'AGENCIA',
     );
   }
 

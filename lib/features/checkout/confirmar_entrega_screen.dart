@@ -17,10 +17,13 @@ class ConfirmarEntregaScreen extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final checkout = context.watch<CheckoutProvider>();
     final subtotal = cart.subtotal;
-    final expressTarifa = TarifaEnvio.estimar(
+    final expressTarifa = TarifaEnvio.costo(
       departamento: checkout.savedExpress?.departamento ?? checkout.address?.departamento,
       provincia: checkout.savedExpress?.provincia ?? checkout.address?.provincia,
       distrito: checkout.savedExpress?.distrito ?? checkout.address?.distrito,
+      tipo: (checkout.savedExpress?.envioTipo ?? checkout.address?.envioTipo) == 'DOMICILIO'
+          ? 'DOMICILIO'
+          : 'AGENCIA',
     );
 
     // No redirigir en post-frame de forma agresiva (puede pisar otras pantallas).
@@ -148,7 +151,7 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                           style: TextStyle(fontWeight: FontWeight.w700),
                         ),
                         subtitle: Text(
-                          'Solo Lima – Callao, Huancayo y Pasco.\n${expressTarifa.etiqueta}',
+                          'Shalom a agencia o domicilio. Pasco: solo domicilio.\n${expressTarifa.etiqueta}',
                         ),
                         secondary: Row(
                           mainAxisSize: MainAxisSize.min,

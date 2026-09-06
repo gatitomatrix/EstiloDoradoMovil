@@ -9,6 +9,7 @@ import '../../core/providers/checkout_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
 import '../../core/utils/tarifa_envio.dart';
+import '../../core/utils/agencias_shalom.dart';
 import '../../core/widgets/address_map_preview.dart';
 import 'interactive_map_screen.dart';
 
@@ -27,6 +28,10 @@ class _EntregaScreenState extends State<EntregaScreen> {
 
   bool _showAddressSheet = false;
   bool _stepMap = false;
+  String _fase = 'ubigeo';
+  bool _quiereDomicilio = false;
+  ResultadoAgencias? _agenciasRes;
+  AgenciaShalom? _agenciaSel;
   bool _loadingGeo = false;
 
   List<String> _deps = [];
@@ -116,6 +121,10 @@ class _EntregaScreenState extends State<EntregaScreen> {
     setState(() {
       _showAddressSheet = true;
       _stepMap = false;
+      _fase = 'ubigeo';
+      _quiereDomicilio = false;
+      _agenciasRes = null;
+      _agenciaSel = null;
     });
     _restoreDraft();
   }
@@ -207,6 +216,76 @@ class _EntregaScreenState extends State<EntregaScreen> {
     );
   }
 
+  bool get _esPasco =>
+      TarifaEnvio.zona(departamento: _dep, provincia: _prov, distrito: _dist) == 'pasco';
+
+  Future<void> _continuarUbigeo() async {
+    if (_dep == null || _prov == null || _dist == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Elige departamento, provincia y distrito')),
+      );
+      return;
+    }
+    if (!TarifaEnvio.cubre(departamento: _dep, provincia: _prov, distrito: _dist)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(TarifaEnvio.coberturaTexto)),
+      );
+      return;
+    }
+    if (_esPasco) {
+      _quiereDomicilio = true;
+      if (_viaCtrl.text.trim().isEmpty || _numCtrl.text.trim().isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('En Pasco indica calle y número para el domicilio')),
+        );
+        return;
+      }
+      await _continuarDireccion();
+      return;
+    }
+    setState(() {
+      _agenciasRes = buscarAgenciasShalom(departamento: _dep, provincia: _prov, distrito: _dist);
+      _agenciaSel = _agenciasRes!.agencias.isEmpty ? null : _agenciasRes!.agencias.first;
+      _fase = 'agencia';
+    });
+  }
+
+  void _guardarAgencia(CheckoutProvider checkout) {
+    final a = _agenciaSel;
+    if (a == null) return;
+    final addr = DeliveryAddress(
+      departamento: _dep!,
+      provincia: _prov!,
+      distrito: _dist!,
+      via: a.nombre,
+      numero: 'S/N',
+      full: '${a.nombre} — ${a.direccion} (${a.distrito})',
+      envioTipo: 'AGENCIA',
+      agenciaId: a.id,
+      agenciaNombre: a.nombre,
+      agenciaDireccion: a.direccion,
+    );
+    checkout.setExpress(addr, fee: 12);
+    setState(() => _showAddressSheet = false);
+    context.push('/confirmar-entrega');
+  }
+
+  Future<void> _continuarDesdeAgencia(CheckoutProvider checkout) async {
+    if (_agenciaSel == null) return;
+    if (_quiereDomicilio) {
+      if (_viaCtrl.text.trim().isEmpty || _numCtrl.text.trim().isEmpty) {
+        setState(() => _fase = 'ubigeo');
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Completa calle y número para el domicilio')),
+        );
+        return;
+      }
+      await _continuarDireccion();
+      return;
+    }
+    _guardarAgencia(checkout);
+  }
+
   Future<void> _continuarDireccion() async {
     if (_dep == null ||
         _prov == null ||
@@ -229,7 +308,6 @@ class _EntregaScreenState extends State<EntregaScreen> {
     ].where((e) => e != null && e.toString().isNotEmpty).join(', ');
 
     final res = await _geo.searchAddress(q);
-    // Fallback Huancayo
     _lat = res?.lat ?? -12.06866;
     _lng = res?.lon ?? -75.21027;
 
@@ -243,6 +321,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
       setState(() {
         _loadingGeo = false;
         _stepMap = true;
+        _fase = 'mapa';
       });
     }
   }
@@ -262,8 +341,18 @@ class _EntregaScreenState extends State<EntregaScreen> {
       numero: _numCtrl.text.trim().isEmpty ? '0' : _numCtrl.text.trim(),
       lat: _lat,
       lng: _lng,
+      envioTipo: 'DOMICILIO',
+      agenciaId: _agenciaSel?.id,
+      agenciaNombre: _agenciaSel?.nombre,
+      agenciaDireccion: _agenciaSel?.direccion,
     );
-    checkout.setExpress(addr);
+    final fee = TarifaEnvio.costo(
+      departamento: _dep,
+      provincia: _prov,
+      distrito: _dist,
+      tipo: 'DOMICILIO',
+    ).costo;
+    checkout.setExpress(addr, fee: fee);
     setState(() => _showAddressSheet = false);
     context.push('/confirmar-entrega');
   }
@@ -352,8 +441,8 @@ class _EntregaScreenState extends State<EntregaScreen> {
               const SizedBox(height: 10),
               _DeliveryOption(
                 icon: Icons.local_shipping_outlined,
-                title: 'Envío Express',
-                subtitle: 'Solo Lima – Callao, Huancayo y Pasco.',
+                title: 'Envío',
+                subtitle: 'Shalom a agencia o domicilio. Pasco: solo domicilio S/ 5.',
                 selected: checkout.mode == DeliveryMode.express,
                 onTap: _openExpress,
               ),
@@ -427,9 +516,11 @@ class _EntregaScreenState extends State<EntregaScreen> {
                     children: [
                       Expanded(
                         child: Text(
-                          _stepMap
+                          _fase == 'mapa'
                               ? 'Confirma tu dirección'
-                              : 'Ingresa tu dirección',
+                              : _fase == 'agencia'
+                                  ? 'Agencia Shalom'
+                                  : '¿A dónde enviamos?',
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
@@ -447,7 +538,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.all(16),
-                    child: _stepMap
+                    child: _fase == 'mapa'
                         ? Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -505,15 +596,32 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                   ),
                                 ),
                               TextButton.icon(
-                                onPressed: () =>
-                                    setState(() => _stepMap = false),
+                                onPressed: () => setState(() {
+                                  _stepMap = false;
+                                  _fase = _esPasco ? 'ubigeo' : 'agencia';
+                                }),
                                 icon: const Icon(Icons.edit),
                                 label: const Text('Editar'),
                               ),
                             ],
                           )
-                        : Column(
+                        : _fase == 'agencia'
+                            ? _buildAgencias()
+                            : Column(
                             children: [
+                              if (_esPasco)
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(10),
+                                  margin: const EdgeInsets.only(bottom: 10),
+                                  decoration: BoxDecoration(
+                                    color: Colors.amber.shade50,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'En Cerro de Pasco no usamos Shalom. Entrega a domicilio S/ 5.',
+                                  ),
+                                ),
                               _dropdown(
                                 'Departamento',
                                 _dep,
@@ -537,6 +645,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                   _saveDraft();
                                 }),
                               ),
+                              if (_esPasco || _quiereDomicilio) ...[
                               const SizedBox(height: 10),
                               TextField(
                                 controller: _viaCtrl,
@@ -551,7 +660,6 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                 controller: _numCtrl,
                                 keyboardType: TextInputType.text,
                                 inputFormatters: [
-                                  // Número de puerta puede ser "123-A"; permite dígitos y guión/letras cortas
                                   FilteringTextInputFormatter.allow(
                                     RegExp(r'[0-9A-Za-záéíóúÁÉÍÓÚñÑ\-/]'),
                                   ),
@@ -563,6 +671,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                                   hintText: 'Ej. 123 o 123-A',
                                 ),
                               ),
+                              ],
                             ],
                           ),
                   ),
@@ -576,10 +685,12 @@ class _EntregaScreenState extends State<EntregaScreen> {
                       onPressed: _loadingGeo
                           ? null
                           : () {
-                              if (_stepMap) {
+                              if (_fase == 'mapa') {
                                 _confirmarYGuardar(checkout);
+                              } else if (_fase == 'agencia') {
+                                _continuarDesdeAgencia(checkout);
                               } else {
-                                _continuarDireccion();
+                                _continuarUbigeo();
                               }
                             },
                       child: _loadingGeo
@@ -592,9 +703,11 @@ class _EntregaScreenState extends State<EntregaScreen> {
                               ),
                             )
                           : Text(
-                              _stepMap
+                              _fase == 'mapa'
                                   ? 'Confirmar y guardar'
-                                  : 'Confirmar dirección',
+                                  : _fase == 'agencia'
+                                      ? (_quiereDomicilio ? 'Ir al mapa' : 'Recoger en agencia S/ 12')
+                                      : 'Continuar',
                               style: const TextStyle(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -607,6 +720,77 @@ class _EntregaScreenState extends State<EntregaScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildAgencias() {
+    final res = _agenciasRes;
+    if (res == null) return const SizedBox.shrink();
+    final extra = TarifaEnvio.costo(
+          departamento: _dep,
+          provincia: _prov,
+          distrito: _dist,
+          tipo: 'DOMICILIO',
+        ).costo -
+        12;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (res.exacto)
+          Text('Agencias Shalom en ${res.distritoPedido}. Recojo S/ 12.')
+        else
+          Text(
+            'No hay Shalom en ${res.distritoPedido}. Te sugerimos ${res.distritoSugerido} (más cercano).',
+            style: const TextStyle(fontWeight: FontWeight.w600),
+          ),
+        const SizedBox(height: 8),
+        ...res.agencias.map((a) {
+          final on = _agenciaSel?.id == a.id;
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Material(
+              color: on ? _gold.withValues(alpha: 0.12) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              child: ListTile(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  side: BorderSide(color: on ? _gold : Colors.grey.shade300),
+                ),
+                title: Text(a.nombre, style: const TextStyle(fontWeight: FontWeight.w700)),
+                subtitle: Text('${a.direccion} · ${a.distrito}'),
+                trailing: on ? const Icon(Icons.check_circle, color: _gold) : null,
+                onTap: () => setState(() => _agenciaSel = a),
+              ),
+            ),
+          );
+        }),
+        CheckboxListTile(
+          value: _quiereDomicilio,
+          activeColor: _gold,
+          contentPadding: EdgeInsets.zero,
+          title: Text('Quiero entrega a domicilio (+ S/ ${extra.toStringAsFixed(0)})'),
+          onChanged: (v) => setState(() => _quiereDomicilio = v ?? false),
+        ),
+        if (_quiereDomicilio) ...[
+          TextField(
+            controller: _viaCtrl,
+            textCapitalization: TextCapitalization.words,
+            decoration: const InputDecoration(
+              labelText: 'Calle / avenida',
+              border: OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _numCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Número',
+              border: OutlineInputBorder(),
+            ),
+          ),
+        ],
+        TextButton(onPressed: () => setState(() => _fase = 'ubigeo'), child: const Text('Atrás')),
+      ],
     );
   }
 

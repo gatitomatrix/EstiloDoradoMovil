@@ -113,10 +113,19 @@ class CheckoutProvider extends ChangeNotifier {
     address = addr;
     draft = addr;
     this.fee = fee ??
-        TarifaEnvio.estimar(
+        TarifaEnvio.costo(
           departamento: addr.departamento,
           provincia: addr.provincia,
           distrito: addr.distrito,
+          tipo: addr.envioTipo == 'DOMICILIO' ||
+                  TarifaEnvio.zona(
+                        departamento: addr.departamento,
+                        provincia: addr.provincia,
+                        distrito: addr.distrito,
+                      ) ==
+                      'pasco'
+              ? 'DOMICILIO'
+              : 'AGENCIA',
         ).costo;
     this.discount = discount;
     notifyListeners();
@@ -141,10 +150,12 @@ class CheckoutProvider extends ChangeNotifier {
       if (saved != null) {
         address = saved;
         draft = saved;
-        fee = TarifaEnvio.estimar(
+        final tipo = saved.envioTipo == 'DOMICILIO' ? 'DOMICILIO' : 'AGENCIA';
+        fee = TarifaEnvio.costo(
           departamento: saved.departamento,
           provincia: saved.provincia,
           distrito: saved.distrito,
+          tipo: tipo,
         ).costo;
       }
       discount = 0;
