@@ -17,7 +17,7 @@ class ConfirmarEntregaScreen extends StatelessWidget {
     final cart = context.watch<CartProvider>();
     final checkout = context.watch<CheckoutProvider>();
     final subtotal = cart.subtotal;
-    final expressTarifa = TarifaEnvio.costo(
+    final expressTarifa = TarifaEnvio.calcular(
       departamento: checkout.savedExpress?.departamento ?? checkout.address?.departamento,
       provincia: checkout.savedExpress?.provincia ?? checkout.address?.provincia,
       distrito: checkout.savedExpress?.distrito ?? checkout.address?.distrito,

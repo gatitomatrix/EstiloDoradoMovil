@@ -150,12 +150,12 @@ class CheckoutProvider extends ChangeNotifier {
     address = addr;
     draft = addr;
     this.fee = fee ??
-        TarifaEnvio.costo(
+        TarifaEnvio.calcular(
           departamento: addr.departamento,
           provincia: addr.provincia,
           distrito: addr.distrito,
           tipo: addr.envioTipo == 'DOMICILIO' ||
-                  TarifaEnvio.zona(
+                  TarifaEnvio.zonaDe(
                         departamento: addr.departamento,
                         provincia: addr.provincia,
                         distrito: addr.distrito,
@@ -188,7 +188,7 @@ class CheckoutProvider extends ChangeNotifier {
         address = saved;
         draft = saved;
         final tipo = saved.envioTipo == 'DOMICILIO' ? 'DOMICILIO' : 'AGENCIA';
-        fee = TarifaEnvio.costo(
+        fee = TarifaEnvio.calcular(
           departamento: saved.departamento,
           provincia: saved.provincia,
           distrito: saved.distrito,

@@ -62,6 +62,6 @@ class ProductService {
         );
       }
     } catch (_) {}
-    return (activa: false, texto: '', porcentaje: 0);
+    return (activa: false, texto: '', porcentaje: 0.0);
   }
 }

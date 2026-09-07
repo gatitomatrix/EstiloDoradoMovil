@@ -65,7 +65,7 @@ class TarifaEnvio {
         .toList();
   }
 
-  static String zona({
+  static String zonaDe({
     String? departamento,
     String? provincia,
     String? distrito,
@@ -81,17 +81,17 @@ class TarifaEnvio {
   }
 
   static bool usaShalom({String? departamento, String? provincia, String? distrito}) {
-    final z = zona(departamento: departamento, provincia: provincia, distrito: distrito);
+    final z = zonaDe(departamento: departamento, provincia: provincia, distrito: distrito);
     return z == 'lima' || z == 'huancayo';
   }
 
-  static TarifaEnvio costo({
+  static TarifaEnvio calcular({
     String? departamento,
     String? provincia,
     String? distrito,
     required String tipo, // AGENCIA | DOMICILIO
   }) {
-    final z = zona(departamento: departamento, provincia: provincia, distrito: distrito);
+    final z = zonaDe(departamento: departamento, provincia: provincia, distrito: distrito);
     if (z == 'fuera') {
       return const TarifaEnvio(costo: 0, zona: 'fuera', etiqueta: 'Fuera de cobertura');
     }
@@ -113,8 +113,8 @@ class TarifaEnvio {
     String? provincia,
     String? distrito,
   }) {
-    final z = zona(departamento: departamento, provincia: provincia, distrito: distrito);
-    return costo(
+    final z = zonaDe(departamento: departamento, provincia: provincia, distrito: distrito);
+    return calcular(
       departamento: departamento,
       provincia: provincia,
       distrito: distrito,

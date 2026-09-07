@@ -245,7 +245,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   }
 
   bool get _esPasco =>
-      TarifaEnvio.zona(departamento: _dep, provincia: _prov, distrito: _dist) == 'pasco';
+      TarifaEnvio.zonaDe(departamento: _dep, provincia: _prov, distrito: _dist) == 'pasco';
 
   Future<void> _continuarUbigeo() async {
     if (_dep == null || _prov == null || _dist == null) {
@@ -365,7 +365,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   }
 
   ({double lat, double lng}) _fallbackCoords() {
-    final z = TarifaEnvio.zona(departamento: _dep, provincia: _prov, distrito: _dist);
+    final z = TarifaEnvio.zonaDe(departamento: _dep, provincia: _prov, distrito: _dist);
     if (z == 'lima') return (lat: -12.04637, lng: -77.04279);
     if (z == 'pasco') return (lat: -10.66848, lng: -76.25688);
     return (lat: -12.06866, lng: -75.21027);
@@ -391,7 +391,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
       agenciaNombre: _agenciaSel?.nombre,
       agenciaDireccion: _agenciaSel?.direccion,
     );
-    final fee = TarifaEnvio.costo(
+    final fee = TarifaEnvio.calcular(
       departamento: _dep,
       provincia: _prov,
       distrito: _dist,
@@ -818,7 +818,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
   Widget _buildAgencias() {
     final res = _agenciasRes;
     if (res == null) return const SizedBox.shrink();
-    final extra = TarifaEnvio.costo(
+    final extra = TarifaEnvio.calcular(
           departamento: _dep,
           provincia: _prov,
           distrito: _dist,
