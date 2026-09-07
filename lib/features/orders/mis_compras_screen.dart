@@ -93,8 +93,9 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
 
   String _fmtDate(String? raw) {
     if (raw == null) return '—';
-    final d = DateTime.tryParse(raw);
+    var d = DateTime.tryParse(raw);
     if (d == null) return raw;
+    if (d.isUtc) d = d.toLocal();
     return DateFormat('dd/MM/yyyy HH:mm').format(d);
   }
 
