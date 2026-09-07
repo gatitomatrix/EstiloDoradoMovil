@@ -63,6 +63,12 @@ class AssistantScreen extends StatefulWidget {
 }
 
 class _AssistantScreenState extends State<AssistantScreen> {
+  static List<_ChatMsg>? _holdMsgs;
+  static List<Map<String, dynamic>> _holdOffered = [];
+  static String? _holdAwaiting;
+  static Map<String, dynamic>? _holdComplaint;
+  static bool pendingLoginGuide = false;
+
   final _svc = AssistantService();
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
@@ -82,14 +88,47 @@ class _AssistantScreenState extends State<AssistantScreen> {
   @override
   void initState() {
     super.initState();
-    _msgs.add(
-      _ChatMsg(
-        text:
-            'Hola, soy Dori. ¿Te ayudo a elegir un regalo? Dime qué buscas o para quién es.',
-        fromUser: false,
-        driver: 'welcome',
-      ),
-    );
+    if (_holdMsgs != null && _holdMsgs!.isNotEmpty) {
+      _msgs.addAll(_holdMsgs!);
+      _offered = List<Map<String, dynamic>>.from(_holdOffered);
+      _awaiting = _holdAwaiting;
+      _complaint = _holdComplaint;
+    } else {
+      _msgs.add(
+        _ChatMsg(
+          text:
+              'Hola, soy Dori. ¿Te ayudo a elegir un regalo? Dime qué buscas o para quién es.',
+          fromUser: false,
+          driver: 'welcome',
+        ),
+      );
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (pendingLoginGuide && context.read<AuthProvider>().isLoggedIn) {
+      pendingLoginGuide = false;
+      setState(() {
+        _msgs.add(
+          _ChatMsg(
+            text:
+                'Listo, ya estás dentro. Puedes agregar al carrito, elegir recojo o envío y pagar. En la pantalla de pago Dori no tapa Culqi ni Yape; vuelve con el icono de chat.',
+            fromUser: false,
+            driver: 'guide',
+          ),
+        );
+      });
+      _snap();
+    }
+  }
+
+  void _snap() {
+    _holdMsgs = List<_ChatMsg>.from(_msgs);
+    _holdOffered = List<Map<String, dynamic>>.from(_offered);
+    _holdAwaiting = _awaiting;
+    _holdComplaint = _complaint;
   }
 
   @override
@@ -163,6 +202,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
         );
         _sending = false;
       });
+      _snap();
     } catch (e) {
       if (!mounted) return;
       final msg = e is ApiException ? e.message : e.toString();
@@ -227,17 +267,19 @@ class _AssistantScreenState extends State<AssistantScreen> {
     );
 
     final reply = switch (result) {
-      CartAddResult.added => '${pending.nombre} × ${pending.qty} se agregó al carrito.',
-      CartAddResult.increased => 'Sumé ${pending.qty} más de ${pending.nombre} al carrito.',
+      CartAddResult.added =>
+        '${pending.nombre} × ${pending.qty} se agregó al carrito. Siguiente: carrito → entrega → pago. Si no has iniciado sesión, te lo pediremos al pagar.',
+      CartAddResult.increased =>
+        'Sumé ${pending.qty} más de ${pending.nombre}. Sigue en el carrito o paga cuando quieras.',
       CartAddResult.atLimit =>
         'Llegaste al stock máximo de ${pending.nombre} (${pending.stock}).',
       CartAddResult.outOfStock => '${pending.nombre} está agotado.',
     };
 
-
     setState(() {
       _msgs.add(_ChatMsg(text: reply, fromUser: false, driver: 'cart'));
     });
+    _snap();
     _scrollToEnd();
 
     if (result == CartAddResult.added || result == CartAddResult.increased) {
@@ -415,7 +457,11 @@ class _AssistantScreenState extends State<AssistantScreen> {
             if (m.needLogin) ...[
               const SizedBox(height: 8),
               FilledButton(
-                onPressed: () => context.push('/login'),
+                onPressed: () {
+                  pendingLoginGuide = true;
+                  context.read<AuthProvider>().setNextRouteAfterLogin('/asistente');
+                  context.push('/login');
+                },
                 style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: Colors.black87),
                 child: const Text('Iniciar sesión'),
               ),

@@ -34,7 +34,16 @@ class _CartScreenState extends State<CartScreen> {
     final items = cartProvider.items;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Carrito')),
+      appBar: AppBar(
+        title: const Text('Carrito'),
+        actions: [
+          IconButton(
+            tooltip: 'Dori',
+            icon: const Icon(Icons.chat_bubble_outline),
+            onPressed: () => context.push('/asistente'),
+          ),
+        ],
+      ),
       body: items.isEmpty
           ? _buildEmptyState(context)
           : Column(

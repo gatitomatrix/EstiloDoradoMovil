@@ -423,6 +423,11 @@ class _EntregaScreenState extends State<EntregaScreen> {
           },
         ),
         actions: [
+          IconButton(
+            tooltip: 'Dori',
+            icon: const Icon(Icons.chat_bubble_outline),
+            onPressed: () => context.push('/asistente'),
+          ),
           TextButton(
             onPressed: () => context.go('/home'),
             child: const Text('Inicio', style: TextStyle(color: Colors.black87)),
