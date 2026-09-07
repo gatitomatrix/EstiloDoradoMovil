@@ -13,6 +13,7 @@ import '../../core/models/product_model.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
 import '../../core/utils/whatsapp.dart';
+import '../../core/services/product_service.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -29,6 +30,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   DateTime? _lastCatalogReset;
   bool _showDoriHint = true;
   Timer? _doriHintTimer;
+  String _promoTexto = '';
 
   @override
   void initState() {
@@ -36,6 +38,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       context.read<ProductProvider>().loadProducts();
+      _loadPromo();
       _showFullCatalog();
       AppRouter.router.routerDelegate.addListener(_onRouteChanged);
       _doriHintTimer = Timer(const Duration(seconds: 8), () {
@@ -91,6 +94,18 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     _maxCtrl.clear();
     Provider.of<ProductProvider>(context, listen: false).clearSearch();
     setState(() {});
+  }
+
+  Future<void> _loadPromo() async {
+    try {
+      final p = await ProductService().getPromoActiva();
+      if (!mounted) return;
+      setState(() {
+        _promoTexto = (p.activa && p.texto.isNotEmpty) ? p.texto : '';
+      });
+    } catch (_) {
+      if (mounted) setState(() => _promoTexto = '');
+    }
   }
 
   Future<void> _runSearch(String q) async {
@@ -189,11 +204,16 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
         children: [
           RefreshIndicator(
         color: const Color(0xFFD4AF37),
-        onRefresh: () => productProvider.loadProducts(search: productProvider.search),
+        onRefresh: () async {
+          await productProvider.loadProducts(search: productProvider.search);
+          await _loadPromo();
+        },
         child: CustomScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           slivers: [
             const SliverToBoxAdapter(child: _HeroBanner()),
+            if (_promoTexto.isNotEmpty)
+              SliverToBoxAdapter(child: _PromoCinta(texto: _promoTexto)),
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
@@ -637,6 +657,33 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
               },
             ),
         ],
+      ),
+    );
+  }
+}
+
+class _PromoCinta extends StatelessWidget {
+  final String texto;
+  const _PromoCinta({required this.texto});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: const Color(0xFFD32F2F),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+        child: Text(
+          texto,
+          textAlign: TextAlign.center,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+            fontSize: 13.5,
+            height: 1.3,
+          ),
+        ),
       ),
     );
   }
