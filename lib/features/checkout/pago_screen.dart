@@ -85,6 +85,29 @@ class _PagoScreenState extends State<PagoScreen> {
     super.dispose();
   }
 
+  String _matchName(List<String> list, String name) {
+    final n = _norm(name);
+    if (n.isEmpty) return '';
+    for (final x in list) {
+      if (_norm(x) == n) return x;
+    }
+    for (final x in list) {
+      final xn = _norm(x);
+      if (xn.contains(n) || n.contains(xn)) return x;
+    }
+    return '';
+  }
+
+  String _norm(String s) => s
+      .toLowerCase()
+      .replaceAll(RegExp(r'[áàä]'), 'a')
+      .replaceAll(RegExp(r'[éèë]'), 'e')
+      .replaceAll(RegExp(r'[íìï]'), 'i')
+      .replaceAll(RegExp(r'[óòö]'), 'o')
+      .replaceAll(RegExp(r'[úùü]'), 'u')
+      .replaceAll('ñ', 'n')
+      .trim();
+
   Future<void> _loadProvs(String dep, {required bool forFactura}) async {
     final p = await _ubigeo.getProvincias(dep);
     if (!mounted) return;
@@ -129,24 +152,34 @@ class _PagoScreenState extends State<PagoScreen> {
       }
       _facRazon.text = (d['razon_social'] ?? '').toString();
       _facDir.text = (d['direccion'] ?? '').toString();
-      final depName = (d['departamento'] ?? '').toString();
-      String? dep;
-      for (final x in _deps) {
-        if (x.toLowerCase() == depName.toLowerCase()) dep = x;
-      }
-      void apply() => _facDep = dep;
+      final dep = _matchName(_deps, (d['departamento'] ?? '').toString());
+      void apply() => _facDep = dep.isEmpty ? null : dep;
       if (refresh != null) {
         refresh(apply);
       } else {
         setState(apply);
       }
-      if (dep != null) await _loadProvs(dep, forFactura: true);
+      if (dep.isEmpty) {
+        _toast('Datos de SUNAT listos. Elige departamento, provincia y distrito.');
+        return;
+      }
+      await _loadProvs(dep, forFactura: true);
       if (!mounted) return;
+      final prov = _matchName(_provs, (d['provincia'] ?? '').toString());
+      setState(() => _facProv = prov.isEmpty ? null : prov);
+      if (prov.isEmpty) {
+        _toast('Datos completados. Elige provincia y distrito.');
+        return;
+      }
+      await _loadDists(dep, prov, forFactura: true);
+      if (!mounted) return;
+      final dist = _matchName(_dists, (d['distrito'] ?? '').toString());
+      setState(() => _facDist = dist.isEmpty ? null : dist);
       refresh?.call(() {});
       final estado = (d['estado'] ?? '').toString();
       _toast(estado.isNotEmpty && estado.toUpperCase() != 'ACTIVO'
-          ? 'RUC $estado. Revisa y elige provincia/distrito.'
-          : 'Datos del RUC cargados. Elige provincia y distrito.');
+          ? 'RUC $estado. Revisa provincia y distrito.'
+          : (dist.isEmpty ? 'Datos completados. Elige el distrito.' : 'Datos de SUNAT completados.'));
     } catch (_) {
       if (mounted) _toast('No se pudo consultar el RUC. Completa a mano.');
     }
