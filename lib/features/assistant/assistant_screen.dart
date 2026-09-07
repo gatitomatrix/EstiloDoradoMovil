@@ -41,6 +41,8 @@ class _ChatMsg {
   final String? whatsappLabel;
   final List<Map<String, dynamic>> pedidos;
   final bool needLogin;
+  final String? navigateUrl;
+  final String? navigateLabel;
 
   _ChatMsg({
     required this.text,
@@ -52,6 +54,8 @@ class _ChatMsg {
     this.whatsappLabel,
     this.pedidos = const [],
     this.needLogin = false,
+    this.navigateUrl,
+    this.navigateLabel,
   });
 }
 
@@ -165,9 +169,15 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _PendingAdd? pending;
       String? waUrl;
       String? waLabel;
+      String? navUrl;
+      String? navLabel;
       if (res.action?.type == 'whatsapp' && (res.action?.url ?? '').isNotEmpty) {
         waUrl = res.action!.url;
         waLabel = res.action!.label ?? 'Escribir por WhatsApp';
+      }
+      if (res.action?.type == 'navigate' && (res.action?.url ?? '').isNotEmpty) {
+        navUrl = res.action!.url;
+        navLabel = res.action!.label ?? 'Ver todos';
       }
       if (res.action?.type == 'confirm_add' && res.action?.id != null) {
         final a = res.action!;
@@ -198,6 +208,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
             whatsappLabel: waLabel,
             pedidos: res.pedidos,
             needLogin: res.action?.type == 'login',
+            navigateUrl: navUrl,
+            navigateLabel: navLabel,
           ),
         );
         _sending = false;
@@ -448,11 +460,18 @@ class _AssistantScreenState extends State<AssistantScreen> {
                   padding: const EdgeInsets.only(bottom: 6),
                   child: OutlinedButton(
                     onPressed: () => _send('pedido $id'),
-                    child: Text('#$id · S/ ${o['total']} · ${o['fecha'] ?? ''}'),
+                    child: Text('#$id · ${o['estado'] ?? ''} · S/ ${o['total']} · ${o['fecha'] ?? ''}'),
                   ),
                 );
               }),
-              TextButton(onPressed: () => _send('otro'), child: const Text('Otro / WhatsApp')),
+              if (m.navigateUrl != null)
+                FilledButton(
+                  onPressed: () => context.push(m.navigateUrl!),
+                  style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: Colors.black87),
+                  child: Text(m.navigateLabel ?? 'Ver todos'),
+                )
+              else
+                TextButton(onPressed: () => _send('otro'), child: const Text('Otro / WhatsApp')),
             ],
             if (m.needLogin) ...[
               const SizedBox(height: 8),
