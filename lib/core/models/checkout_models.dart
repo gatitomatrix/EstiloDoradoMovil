@@ -271,6 +271,7 @@ class PedidoDetalle {
 class PedidoListItem {
   final int idPedido;
   final String? fechaPedido;
+  final String? fechaEstado;
   final String estado;
   final double total;
   final String? formaPago;
@@ -284,6 +285,7 @@ class PedidoListItem {
   const PedidoListItem({
     required this.idPedido,
     this.fechaPedido,
+    this.fechaEstado,
     required this.estado,
     required this.total,
     this.formaPago,
@@ -301,6 +303,7 @@ class PedidoListItem {
             ) ??
             0,
         fechaPedido: (j['fecha_pedido'] ?? j['fecha'])?.toString(),
+        fechaEstado: j['fecha_estado']?.toString(),
         estado: j['estado']?.toString() ?? 'pendiente',
         total: double.tryParse(j['total']?.toString() ?? '0') ?? 0,
         formaPago: j['forma_pago']?.toString(),

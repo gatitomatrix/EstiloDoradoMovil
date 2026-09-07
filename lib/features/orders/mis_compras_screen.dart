@@ -342,7 +342,9 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                               ),
                                             ],
                                             const SizedBox(height: 8),
-                                            Text('Fecha: ${_fmtDate(p.fechaPedido)}'),
+                                            Text('Pedido: ${_fmtDate(p.fechaPedido)}'),
+                                            if (p.fechaEstado != null && p.fechaEstado!.isNotEmpty)
+                                              Text('${p.estado}: ${_fmtDate(p.fechaEstado)}'),
                                             Text('Entrega: ${p.direccionEntrega ?? '—'}'),
                                             Text('Pago: ${p.formaPago ?? '—'}'),
                                             if (hasCpe && p.friendly != null)
