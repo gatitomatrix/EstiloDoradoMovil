@@ -47,6 +47,8 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
   bool _searching = false;
   bool _reverseLoading = false;
   String? _hint;
+  String? _viaRev;
+  String? _numRev;
 
   @override
   void initState() {
@@ -78,6 +80,8 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
         final via = rev['via'] ?? '';
         final num = rev['numero'] ?? '';
         final display = rev['display'] ?? '';
+        _viaRev = via.isNotEmpty ? via : _viaRev;
+        _numRev = num.isNotEmpty ? num : _numRev;
         if (display.isNotEmpty) {
           _hint = display;
         } else if (via.isNotEmpty) {
@@ -96,12 +100,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       return;
     }
     setState(() => _searching = true);
-    final hint = (widget.initialQuery ?? '').trim();
-    var full = q;
-    if (!q.toLowerCase().contains('perú') && !q.toLowerCase().contains('peru')) {
-      full = hint.isNotEmpty && !q.contains(hint) ? '$q, $hint' : '$q, Perú';
-    }
-    final res = await _geo.searchAddress(full);
+    final res = await _geo.searchAddress(q.contains('Perú') || q.toLowerCase().contains('peru') ? q : '$q, Perú');
     if (!mounted) return;
     setState(() => _searching = false);
     if (res == null) {
@@ -111,7 +110,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       return;
     }
     final p = LatLng(res.lat, res.lon);
-    _mapCtrl.move(p, 18);
+    _mapCtrl.move(p, 17);
     await _reverse(p);
   }
 
@@ -120,6 +119,8 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       InteractiveMapResult(
         lat: _pin.latitude,
         lng: _pin.longitude,
+        via: _viaRev,
+        numero: _numRev,
         display: _hint,
       ),
     );

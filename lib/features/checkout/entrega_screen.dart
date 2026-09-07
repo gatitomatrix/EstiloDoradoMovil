@@ -207,7 +207,6 @@ class _EntregaScreenState extends State<EntregaScreen> {
       _dist,
       _prov,
       _dep,
-      'Perú',
     ].where((e) => e != null && e.toString().isNotEmpty).join(', ');
 
     final result = await Navigator.of(context).push<InteractiveMapResult>(
@@ -224,16 +223,19 @@ class _EntregaScreenState extends State<EntregaScreen> {
     setState(() {
       _lat = result.lat;
       _lng = result.lng;
+      if ((result.via ?? '').isNotEmpty) _viaCtrl.text = result.via!;
     });
     _saveDraft();
 
-    // Intentar rellenar vía/número desde reverse
+    // Calle del pin; el número que escribió el cliente se respeta
     final rev = await _geo.reverseAddress(result.lat, result.lng);
     if (!mounted) return;
     if (rev != null) {
       setState(() {
         if ((rev['via'] ?? '').isNotEmpty) _viaCtrl.text = rev['via']!;
-        if ((rev['numero'] ?? '').isNotEmpty) _numCtrl.text = rev['numero']!;
+        if (_numCtrl.text.trim().isEmpty && (rev['numero'] ?? '').isNotEmpty) {
+          _numCtrl.text = rev['numero']!;
+        }
       });
     }
 
