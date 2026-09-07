@@ -154,7 +154,13 @@ class AppRouter {
           );
         },
       ),
-      GoRoute(path: '/mis-compras', builder: (context, state) => const MisComprasScreen()),
+      GoRoute(
+        path: '/mis-compras',
+        builder: (context, state) {
+          final q = int.tryParse(state.uri.queryParameters['pedido'] ?? '');
+          return MisComprasScreen(highlightId: q);
+        },
+      ),
       GoRoute(
         path: '/checkout',
         redirect: (context, state) => '/entrega',

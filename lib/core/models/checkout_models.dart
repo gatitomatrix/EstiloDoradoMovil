@@ -277,6 +277,7 @@ class PedidoListItem {
   final String? formaPago;
   final String? direccionEntrega;
   final String? productoLabel;
+  final String? imagenUrl;
   final String? comprobanteTipo;
   final String? comprobanteSerie;
   final int? comprobanteNumero;
@@ -291,6 +292,7 @@ class PedidoListItem {
     this.formaPago,
     this.direccionEntrega,
     this.productoLabel,
+    this.imagenUrl,
     this.comprobanteTipo,
     this.comprobanteSerie,
     this.comprobanteNumero,
@@ -309,6 +311,7 @@ class PedidoListItem {
         formaPago: j['forma_pago']?.toString(),
         direccionEntrega: j['direccion_entrega']?.toString(),
         productoLabel: j['producto_label']?.toString(),
+        imagenUrl: (j['imagen_url'] ?? j['imagen'])?.toString(),
         comprobanteTipo: j['comprobante_tipo']?.toString(),
         comprobanteSerie: j['comprobante_serie']?.toString(),
         comprobanteNumero:

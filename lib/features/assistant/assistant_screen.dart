@@ -450,7 +450,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
             ],
             if (m.products.isNotEmpty) ...[
               const SizedBox(height: 8),
-              ...m.products.take(6).map((p) => _productCard(p, infoOnly: m.whatsappUrl != null)),
+              ...m.products.take(6).map((p) => _productCard(p, infoOnly: m.whatsappUrl != null || p['info_only'] == true)),
             ],
             if (m.pedidos.isNotEmpty) ...[
               const SizedBox(height: 8),
@@ -458,9 +458,21 @@ class _AssistantScreenState extends State<AssistantScreen> {
                 final id = o['id_pedido'];
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 6),
-                  child: OutlinedButton(
-                    onPressed: () => _send('pedido $id'),
-                    child: Text('#$id · ${o['estado'] ?? ''} · S/ ${o['total']} · ${o['fecha'] ?? ''}'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      OutlinedButton(
+                        onPressed: () => _send('pedido $id'),
+                        child: Text('#$id · ${o['estado'] ?? ''} · S/ ${o['total']} · ${o['fecha'] ?? ''}'),
+                      ),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton(
+                          onPressed: () => context.push('/mis-compras?pedido=$id'),
+                          child: const Text('Ver en Mis compras'),
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }),

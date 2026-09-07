@@ -9,7 +9,8 @@ import '../../core/services/order_service.dart';
 const _gold = Color(0xFFD4AF37);
 
 class MisComprasScreen extends StatefulWidget {
-  const MisComprasScreen({super.key});
+  final int? highlightId;
+  const MisComprasScreen({super.key, this.highlightId});
 
   @override
   State<MisComprasScreen> createState() => _MisComprasScreenState();
@@ -36,6 +37,9 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
   @override
   void initState() {
     super.initState();
+    if (widget.highlightId != null && widget.highlightId! > 0) {
+      _filtroId.text = '${widget.highlightId}';
+    }
     _cargar();
   }
 
@@ -309,6 +313,9 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                       (p.comprobanteTipo == 'BO' || p.comprobanteTipo == 'FA');
 
                                   return Card(
+                                    color: widget.highlightId == p.idPedido
+                                        ? const Color(0xFFFBF6E8)
+                                        : null,
                                     margin: const EdgeInsets.only(bottom: 10),
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(14),
@@ -323,6 +330,19 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                           children: [
                                             Row(
                                               children: [
+                                                if ((p.imagenUrl ?? '').isNotEmpty) ...[
+                                                  ClipRRect(
+                                                    borderRadius: BorderRadius.circular(8),
+                                                    child: Image.network(
+                                                      p.imagenUrl!,
+                                                      width: 48,
+                                                      height: 48,
+                                                      fit: BoxFit.cover,
+                                                      errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 48),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 10),
+                                                ],
                                                 Expanded(
                                                   child: Text(
                                                     'Pedido #${p.idPedido}',
