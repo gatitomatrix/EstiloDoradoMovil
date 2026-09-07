@@ -237,6 +237,24 @@ class _AssistantScreenState extends State<AssistantScreen> {
     });
   }
 
+  /// Dori a veces manda rutas de la web; las pasamos a las de la app.
+  void _openPath(String raw) {
+    var url = raw.trim();
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      return;
+    }
+    url = url.replaceFirst('/cuenta/pedidos', '/mis-compras');
+    url = url.replaceFirst('/carrito', '/cart');
+    url = url.replaceFirst('/tienda', '/home');
+    if (url.startsWith('/producto/')) {
+      context.push(url);
+      return;
+    }
+    if (!url.startsWith('/')) url = '/$url';
+    context.push(url);
+  }
+
   void _askConfirm(Map<String, dynamic> p, {int qty = 1}) {
     final id = int.tryParse(p['id']?.toString() ?? '');
     if (id == null) return;
@@ -468,7 +486,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                       Align(
                         alignment: Alignment.centerLeft,
                         child: TextButton(
-                          onPressed: () => context.push('/mis-compras?pedido=$id'),
+                          onPressed: () => _openPath('/mis-compras?pedido=$id'),
                           child: const Text('Ver en Mis compras'),
                         ),
                       ),
@@ -478,7 +496,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
               }),
               if (m.navigateUrl != null)
                 FilledButton(
-                  onPressed: () => context.push(m.navigateUrl!),
+                  onPressed: () => _openPath(m.navigateUrl!),
                   style: FilledButton.styleFrom(backgroundColor: _gold, foregroundColor: Colors.black87),
                   child: Text(m.navigateLabel ?? 'Ver todos'),
                 )

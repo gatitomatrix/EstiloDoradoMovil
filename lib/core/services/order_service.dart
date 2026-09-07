@@ -49,7 +49,7 @@ class OrderService {
     String? direccionEntrega,
     String? telefono,
     String? envioTipo,
-    Map<String, String>? ubigeo,
+    Map<String, dynamic>? ubigeo,
     required List<ConfirmarItem> items,
     String? comprobante, // FA | BO
     InvoiceData? factura,
