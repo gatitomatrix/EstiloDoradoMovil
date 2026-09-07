@@ -96,7 +96,12 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       return;
     }
     setState(() => _searching = true);
-    final res = await _geo.searchAddress(q.contains('Perú') ? q : '$q, Perú');
+    final hint = (widget.initialQuery ?? '').trim();
+    var full = q;
+    if (!q.toLowerCase().contains('perú') && !q.toLowerCase().contains('peru')) {
+      full = hint.isNotEmpty && !q.contains(hint) ? '$q, $hint' : '$q, Perú';
+    }
+    final res = await _geo.searchAddress(full);
     if (!mounted) return;
     setState(() => _searching = false);
     if (res == null) {
@@ -106,7 +111,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       return;
     }
     final p = LatLng(res.lat, res.lon);
-    _mapCtrl.move(p, 17);
+    _mapCtrl.move(p, 18);
     await _reverse(p);
   }
 

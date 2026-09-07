@@ -847,8 +847,8 @@ class _PagoScreenState extends State<PagoScreen> {
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _sumRow('Productos', subtotal),
-                  _sumRow('Descuentos', -checkout.discount, green: true),
+                  _sumRow('Productos', cart.listado),
+                  _sumRow('Descuentos', -cart.descuentos, green: true),
                   _sumRow('Entregas', checkout.fee),
                   const Divider(),
                   _sumRow('Total', total, bold: true),

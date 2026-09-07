@@ -207,6 +207,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
       _dist,
       _prov,
       _dep,
+      'Perú',
     ].where((e) => e != null && e.toString().isNotEmpty).join(', ');
 
     final result = await Navigator.of(context).push<InteractiveMapResult>(
@@ -532,9 +533,9 @@ class _EntregaScreenState extends State<EntregaScreen> {
               ],
               const SizedBox(height: 20),
               _SummaryCard(
-                subtotal: subtotal,
+                subtotal: cart.listado,
                 fee: checkout.fee,
-                discount: checkout.discount,
+                discount: cart.descuentos,
                 total: total,
                 enabled: _listo &&
                     checkout.mode != DeliveryMode.none &&

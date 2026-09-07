@@ -193,8 +193,8 @@ class ConfirmarEntregaScreen extends StatelessWidget {
                     padding: const EdgeInsets.all(16),
                     child: Column(
                       children: [
-                        _row('Productos', cart.subtotal),
-                        _row('Descuentos', -checkout.discount, green: true),
+                        _row('Productos', cart.listado),
+                        _row('Descuentos', -cart.descuentos, green: true),
                         _row('Entregas', checkout.fee),
                         const Divider(),
                         _row('Total', checkout.totalWith(subtotal), bold: true),
