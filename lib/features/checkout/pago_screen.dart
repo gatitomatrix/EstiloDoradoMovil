@@ -7,6 +7,7 @@ import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/providers/payment_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/product_provider.dart';
 import '../../core/services/order_service.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/utils/input_formatters.dart';
@@ -65,6 +66,14 @@ class _PagoScreenState extends State<PagoScreen> {
     _correoPago = TextEditingController(text: email);
     _ubigeo.getDepartamentos().then((d) {
       if (mounted) setState(() => _deps = d);
+    });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final pp = context.read<ProductProvider>();
+      pp.loadProducts().then((_) {
+        if (!mounted) return;
+        context.read<CartProvider>().syncFromProducts(pp.catalog);
+      });
     });
   }
 

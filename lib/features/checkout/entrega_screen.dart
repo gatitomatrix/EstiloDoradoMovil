@@ -7,6 +7,7 @@ import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/product_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
 import '../../core/utils/tarifa_envio.dart';
@@ -64,6 +65,11 @@ class _EntregaScreenState extends State<EntregaScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _restoreDraft();
       if (!mounted) return;
+      final pp = context.read<ProductProvider>();
+      pp.loadProducts().then((_) {
+        if (!mounted) return;
+        context.read<CartProvider>().syncFromProducts(pp.catalog);
+      });
       final c = context.read<CheckoutProvider>();
       if (c.telefono.isEmpty) {
         final raw = context.read<AuthProvider>().user?['telefono']?.toString() ?? '';

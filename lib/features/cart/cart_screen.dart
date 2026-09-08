@@ -20,11 +20,11 @@ class _CartScreenState extends State<CartScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final products = context.read<ProductProvider>().products;
-      if (products.isEmpty) return;
-      final map = {for (final p in products) p.id: p.stock};
-      context.read<CartProvider>().syncStocks(map);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final pp = context.read<ProductProvider>();
+      await pp.loadProducts();
+      if (!mounted) return;
+      context.read<CartProvider>().syncFromProducts(pp.catalog);
     });
   }
 

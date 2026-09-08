@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import '../models/product_model.dart';
 
 class CartItem {
   final int id;
@@ -218,6 +219,42 @@ class CartProvider extends ChangeNotifier {
       if (item.stockMax != max || item.cantidad > max) {
         item.stockMax = max;
         if (item.cantidad > max) item.cantidad = max;
+        changed = true;
+      }
+    }
+    if (changed) {
+      _persist();
+      notifyListeners();
+    }
+  }
+
+  /// Recalcula precio/stock con el catálogo vivo (promo on/off).
+  void syncFromProducts(List<Product> products) {
+    if (_items.isEmpty || products.isEmpty) return;
+    final byId = {for (final p in products) p.id: p};
+    var changed = false;
+    for (var i = 0; i < _items.length; i++) {
+      final p = byId[_items[i].id];
+      if (p == null) continue;
+      final precio = p.precioVenta;
+      final lista = p.precioLista > 0 ? p.precioLista : precio;
+      final max = p.stock < 1 ? 1 : p.stock;
+      final qty = _items[i].cantidad.clamp(1, max);
+      final cur = _items[i];
+      if ((cur.precio - precio).abs() > 0.009 ||
+          (cur.precioLista - lista).abs() > 0.009 ||
+          cur.stockMax != max ||
+          cur.cantidad != qty) {
+        _items[i] = cur.copyWith(
+          precio: precio,
+          precioLista: lista,
+          stockMax: max,
+          cantidad: qty,
+          nombre: p.nombre.isNotEmpty ? p.nombre : cur.nombre,
+          imagenUrl: (p.imagenUrl != null && p.imagenUrl!.isNotEmpty)
+              ? p.imagenUrl
+              : cur.imagenUrl,
+        );
         changed = true;
       }
     }
