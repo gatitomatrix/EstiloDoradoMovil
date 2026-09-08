@@ -527,7 +527,7 @@ class _PagoScreenState extends State<PagoScreen> {
                       width: double.infinity,
                       height: 48,
                       child: ElevatedButton(
-                        onPressed: () {
+                        onPressed: () async {
                           if (tipo == 'BO') {
                             if (_bolNombres.text.trim().isEmpty ||
                                 !RegExp(r'^\d{8}$').hasMatch(_bolDni.text) ||
@@ -540,6 +540,31 @@ class _PagoScreenState extends State<PagoScreen> {
                               );
                               return;
                             }
+                            final ok = await showDialog<bool>(
+                              context: ctx,
+                              builder: (dCtx) => AlertDialog(
+                                title: const Text('Confirmar boleta electrónica'),
+                                content: Text(
+                                  '¿Confirmas que la información consignada es correcta?\n\n'
+                                  'Nombre: ${_bolNombres.text.trim()}\n'
+                                  'DNI: ${_bolDni.text.trim()}\n'
+                                  'Dirección: ${_bolDir.text.trim()}\n'
+                                  '$_bolDist / $_bolProv / $_bolDep\n\n'
+                                  'Tu boleta electrónica se emitirá con estos datos.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(dCtx, false),
+                                    child: const Text('Revisar datos'),
+                                  ),
+                                  ElevatedButton(
+                                    onPressed: () => Navigator.pop(dCtx, true),
+                                    child: const Text('Sí, es correcta'),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (ok != true) return;
                             pay.saveBoleta(BoletaData(
                               nombres: _bolNombres.text.trim(),
                               dni: _bolDni.text.trim(),
