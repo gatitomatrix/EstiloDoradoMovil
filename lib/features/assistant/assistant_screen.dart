@@ -8,6 +8,7 @@ import '../../core/services/api_service.dart';
 import '../../core/services/assistant_service.dart';
 import '../../core/utils/app_snackbar.dart';
 import '../../core/app_router.dart';
+import '../../core/utils/fecha_pe.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 const _gold = Color(0xFFD4AF37);
@@ -72,6 +73,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
   static String? _holdAwaiting;
   static Map<String, dynamic>? _holdComplaint;
   static bool pendingLoginGuide = false;
+  static String? pendingReplay;
 
   final _svc = AssistantService();
   final _ctrl = TextEditingController();
@@ -114,17 +116,25 @@ class _AssistantScreenState extends State<AssistantScreen> {
     super.didChangeDependencies();
     if (pendingLoginGuide && context.read<AuthProvider>().isLoggedIn) {
       pendingLoginGuide = false;
-      setState(() {
-        _msgs.add(
-          _ChatMsg(
-            text:
-                'Listo, ya estás dentro. Puedes agregar al carrito, elegir recojo o envío y pagar. En la pantalla de pago Dori no tapa Culqi ni Yape; vuelve con el icono de chat.',
-            fromUser: false,
-            driver: 'guide',
-          ),
-        );
-      });
-      _snap();
+      final replay = pendingReplay;
+      pendingReplay = null;
+      if (replay != null && replay.trim().isNotEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _replayAfterLogin(replay);
+        });
+      } else {
+        setState(() {
+          _msgs.add(
+            _ChatMsg(
+              text:
+                  'Listo, ya estás dentro. Puedes agregar al carrito, elegir recojo o envío y pagar. En la pantalla de pago Dori no tapa Culqi ni Yape; vuelve con el icono de chat.',
+              fromUser: false,
+              driver: 'guide',
+            ),
+          );
+        });
+        _snap();
+      }
     }
   }
 
@@ -212,6 +222,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
             navigateLabel: navLabel,
           ),
         );
+        if (res.action?.type == 'login') {
+          pendingReplay = text;
+        }
         _sending = false;
       });
       _snap();
@@ -222,6 +235,56 @@ class _AssistantScreenState extends State<AssistantScreen> {
         _msgs.add(_ChatMsg(text: msg, fromUser: false, driver: 'error'));
         _sending = false;
       });
+    }
+    _scrollToEnd();
+  }
+
+  Future<void> _replayAfterLogin(String text) async {
+    if (text.isEmpty || _sending) return;
+    setState(() => _sending = true);
+    try {
+      final res = await _svc.send(text, offeredIds: _offeredIds, awaiting: _awaiting, complaint: _complaint);
+      if (!mounted) return;
+      String? waUrl;
+      String? waLabel;
+      String? navUrl;
+      String? navLabel;
+      if (res.action?.type == 'whatsapp' && (res.action?.url ?? '').isNotEmpty) {
+        waUrl = res.action!.url;
+        waLabel = res.action!.label ?? 'Escribir por WhatsApp';
+      }
+      if (res.action?.type == 'navigate' && (res.action?.url ?? '').isNotEmpty) {
+        navUrl = res.action!.url;
+        navLabel = res.action!.label ?? 'Ver todos';
+      }
+      setState(() {
+        _awaiting = (res.awaiting != null && res.awaiting!.isNotEmpty) ? res.awaiting : null;
+        if (res.complaint != null) _complaint = res.complaint;
+        if (res.products.isNotEmpty) _offered = res.products;
+        _msgs.add(
+          _ChatMsg(
+            text: res.reply,
+            fromUser: false,
+            products: res.products,
+            driver: res.driver,
+            whatsappUrl: waUrl,
+            whatsappLabel: waLabel,
+            pedidos: res.pedidos,
+            needLogin: res.action?.type == 'login',
+            navigateUrl: navUrl,
+            navigateLabel: navLabel,
+          ),
+        );
+        _sending = false;
+      });
+      _snap();
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _msgs.add(_ChatMsg(text: 'Ya estás dentro. ¿Seguimos con tu consulta?', fromUser: false, driver: 'guide'));
+        _sending = false;
+      });
+      _snap();
     }
     _scrollToEnd();
   }
@@ -481,7 +544,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                     children: [
                       OutlinedButton(
                         onPressed: () => _send('pedido $id'),
-                        child: Text('#$id · ${o['estado'] ?? ''} · S/ ${o['total']} · ${o['fecha'] ?? ''}'),
+                        child: Text('#$id · ${o['estado'] ?? ''} · S/ ${o['total']} · ${formatFechaPe(o['fecha']?.toString(), conHora: true)}'),
                       ),
                       Align(
                         alignment: Alignment.centerLeft,
@@ -508,6 +571,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
               FilledButton(
                 onPressed: () {
                   pendingLoginGuide = true;
+                  final lastUser = _msgs.reversed.where((m) => m.fromUser).map((m) => m.text);
+                  if (lastUser.isNotEmpty) pendingReplay = lastUser.first;
                   context.read<AuthProvider>().setNextRouteAfterLogin('/asistente');
                   context.push('/login');
                 },

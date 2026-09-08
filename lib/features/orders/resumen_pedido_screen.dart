@@ -6,6 +6,7 @@ import '../../core/models/checkout_models.dart';
 import '../../core/utils/file_url.dart';
 import '../../core/services/order_service.dart';
 import '../../core/utils/tarifa_envio.dart';
+import '../../core/utils/fecha_pe.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -278,7 +279,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _info('Fecha', d.fechaPedido ?? '—'),
+                _info('Fecha', formatFechaHoraPe(d.fechaPedido)),
                 _info('Pago', d.formaPago.isEmpty ? '—' : d.formaPago),
                 _info('Entrega', d.direccionEntrega ?? '—'),
               ],

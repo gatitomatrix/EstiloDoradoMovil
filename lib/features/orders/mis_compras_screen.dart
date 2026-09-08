@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
-import 'package:intl/intl.dart';
 import '../../core/models/checkout_models.dart';
+import '../../core/utils/fecha_pe.dart';
 import '../../core/services/order_service.dart';
 
 const _gold = Color(0xFFD4AF37);
@@ -95,13 +95,7 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
     return arr;
   }
 
-  String _fmtDate(String? raw) {
-    if (raw == null) return '—';
-    var d = DateTime.tryParse(raw);
-    if (d == null) return raw;
-    if (d.isUtc) d = d.toLocal();
-    return DateFormat('dd/MM/yyyy HH:mm').format(d);
-  }
+  String _fmtDate(String? raw) => formatFechaHoraPe(raw);
 
   Future<void> _cancelar(PedidoListItem p) async {
     final ok = await showDialog<bool>(
