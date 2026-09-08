@@ -5,11 +5,20 @@ import '../config/api_config.dart';
 class GeocodingService {
   final ApiService _api = ApiService();
 
-  Future<({double lat, double lon})?> searchAddress(String query) async {
+  Future<({double lat, double lon})?> searchAddress(
+    String query, {
+    double? lat,
+    double? lon,
+  }) async {
     try {
+      final qp = <String, dynamic>{'q': query};
+      if (lat != null && lon != null) {
+        qp['lat'] = lat.toString();
+        qp['lon'] = lon.toString();
+      }
       final res = await _api.get(
         ApiConfig.geoSearch,
-        queryParameters: {'q': query},
+        queryParameters: qp,
       );
       final data = res.data;
       if (data is! List || data.isEmpty) return null;

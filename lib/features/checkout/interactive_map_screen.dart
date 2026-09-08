@@ -1,5 +1,6 @@
 // lib/features/checkout/interactive_map_screen.dart
-// Mapa interactivo: pan/zoom, toque para pin, búsqueda de dirección.
+// Mapa: pin al centro, al mover se actualiza la calle (como delivery).
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -43,51 +44,64 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
   final _geo = GeocodingService();
   final _mapCtrl = MapController();
   final _searchCtrl = TextEditingController();
-  late LatLng _pin;
+  late LatLng _center;
   bool _searching = false;
   bool _reverseLoading = false;
+  bool _ignoreMove = false;
   String? _hint;
   String? _viaRev;
   String? _numRev;
+  Timer? _moveDebounce;
+  int _revGen = 0;
 
   @override
   void initState() {
     super.initState();
-    _pin = LatLng(widget.initialLat, widget.initialLng);
+    _center = LatLng(widget.initialLat, widget.initialLng);
     if (widget.initialQuery != null && widget.initialQuery!.trim().isNotEmpty) {
       _searchCtrl.text = widget.initialQuery!;
     }
-    WidgetsBinding.instance.addPostFrameCallback((_) => _reverse(_pin));
+    WidgetsBinding.instance.addPostFrameCallback((_) => _reverse(_center));
   }
 
   @override
   void dispose() {
+    _moveDebounce?.cancel();
     _searchCtrl.dispose();
     _mapCtrl.dispose();
     super.dispose();
   }
 
   Future<void> _reverse(LatLng p) async {
+    final gen = ++_revGen;
     setState(() {
       _reverseLoading = true;
-      _pin = p;
+      _center = p;
     });
     final rev = await _geo.reverseAddress(p.latitude, p.longitude);
-    if (!mounted) return;
+    if (!mounted || gen != _revGen) return;
     setState(() {
       _reverseLoading = false;
       if (rev != null) {
-        final via = rev['via'] ?? '';
-        final num = rev['numero'] ?? '';
-        final display = rev['display'] ?? '';
-        _viaRev = via.isNotEmpty ? via : _viaRev;
-        _numRev = num.isNotEmpty ? num : _numRev;
+        final via = (rev['via'] ?? '').trim();
+        final num = (rev['numero'] ?? '').trim();
+        final display = (rev['display'] ?? '').trim();
+        if (via.isNotEmpty) _viaRev = via;
+        if (num.isNotEmpty) _numRev = num;
         if (display.isNotEmpty) {
           _hint = display;
-        } else if (via.isNotEmpty) {
-          _hint = '$via $num'.trim();
+        } else if ((_viaRev ?? '').isNotEmpty) {
+          _hint = '${_viaRev!} ${_numRev ?? ''}'.trim();
         }
       }
+    });
+  }
+
+  void _onMoveEnd(LatLng c) {
+    _moveDebounce?.cancel();
+    _moveDebounce = Timer(const Duration(milliseconds: 350), () {
+      if (!mounted || _ignoreMove) return;
+      _reverse(c);
     });
   }
 
@@ -100,7 +114,8 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       return;
     }
     setState(() => _searching = true);
-    final res = await _geo.searchAddress(q.contains('Perú') || q.toLowerCase().contains('peru') ? q : '$q, Perú');
+    final query = q.contains('Perú') || q.toLowerCase().contains('peru') ? q : '$q, Perú';
+    final res = await _geo.searchAddress(query, lat: _center.latitude, lon: _center.longitude);
     if (!mounted) return;
     setState(() => _searching = false);
     if (res == null) {
@@ -110,15 +125,21 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
       return;
     }
     final p = LatLng(res.lat, res.lon);
-    _mapCtrl.move(p, 17);
+    _ignoreMove = true;
+    _mapCtrl.move(p, 18);
     await _reverse(p);
+    _ignoreMove = false;
   }
 
   void _confirm() {
+    LatLng p = _center;
+    try {
+      p = _mapCtrl.camera.center;
+    } catch (_) {}
     Navigator.of(context).pop(
       InteractiveMapResult(
-        lat: _pin.latitude,
-        lng: _pin.longitude,
+        lat: p.latitude,
+        lng: p.longitude,
         via: _viaRev,
         numero: _numRev,
         display: _hint,
@@ -184,8 +205,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12),
             child: Text(
-              'Mueve el mapa, pellizca para zoom y toca donde quieras el pin. '
-              'También puedes buscar por texto.',
+              'Mueve el mapa: la flecha del centro marca el punto y la calle se actualiza sola.',
               style: TextStyle(fontSize: 12, color: Colors.grey[700]),
             ),
           ),
@@ -196,11 +216,15 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                 FlutterMap(
                   mapController: _mapCtrl,
                   options: MapOptions(
-                    initialCenter: _pin,
-                    initialZoom: 16,
+                    initialCenter: _center,
+                    initialZoom: 17,
                     minZoom: 5,
                     maxZoom: 19,
-                    onTap: (tapPos, latLng) => _reverse(latLng),
+                    onMapEvent: (evt) {
+                      if (evt is MapEventMoveEnd) {
+                        _onMoveEnd(evt.camera.center);
+                      }
+                    },
                     interactionOptions: const InteractionOptions(
                       flags: InteractiveFlag.all,
                     ),
@@ -211,24 +235,16 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                       userAgentPackageName: 'com.estilodorado.app_movil_estilo_dorado',
                       maxZoom: 19,
                     ),
-                    MarkerLayer(
-                      markers: [
-                        Marker(
-                          point: _pin,
-                          width: 48,
-                          height: 48,
-                          alignment: Alignment.topCenter,
-                          child: const Icon(
-                            Icons.location_on,
-                            color: Colors.red,
-                            size: 48,
-                          ),
-                        ),
-                      ],
-                    ),
                   ],
                 ),
-                // Controles zoom
+                const IgnorePointer(
+                  child: Center(
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 36),
+                      child: Icon(Icons.location_on, color: Colors.red, size: 52),
+                    ),
+                  ),
+                ),
                 Positioned(
                   right: 12,
                   bottom: 100,
@@ -240,10 +256,6 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                       const SizedBox(height: 8),
                       _zoomBtn(Icons.remove, () {
                         _mapCtrl.move(_mapCtrl.camera.center, _mapCtrl.camera.zoom - 1);
-                      }),
-                      const SizedBox(height: 8),
-                      _zoomBtn(Icons.my_location, () {
-                        _mapCtrl.move(_pin, 17);
                       }),
                     ],
                   ),
@@ -272,7 +284,7 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                       ),
                     const SizedBox(height: 4),
                     Text(
-                      '${_pin.latitude.toStringAsFixed(5)}, ${_pin.longitude.toStringAsFixed(5)}',
+                      '${_center.latitude.toStringAsFixed(5)}, ${_center.longitude.toStringAsFixed(5)}',
                       style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                     ),
                     const SizedBox(height: 10),

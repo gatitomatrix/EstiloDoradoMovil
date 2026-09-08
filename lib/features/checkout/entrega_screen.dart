@@ -230,20 +230,9 @@ class _EntregaScreenState extends State<EntregaScreen> {
       _lat = result.lat;
       _lng = result.lng;
       if ((result.via ?? '').isNotEmpty) _viaCtrl.text = result.via!;
+      if ((result.numero ?? '').isNotEmpty) _numCtrl.text = result.numero!;
     });
     _saveDraft();
-
-    // Calle del pin; el número que escribió el cliente se respeta
-    final rev = await _geo.reverseAddress(result.lat, result.lng);
-    if (!mounted) return;
-    if (rev != null) {
-      setState(() {
-        if ((rev['via'] ?? '').isNotEmpty) _viaCtrl.text = rev['via']!;
-        if (_numCtrl.text.trim().isEmpty && (rev['numero'] ?? '').isNotEmpty) {
-          _numCtrl.text = rev['numero']!;
-        }
-      });
-    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -356,11 +345,11 @@ class _EntregaScreenState extends State<EntregaScreen> {
     ];
 
     ({double lat, double lon})? res;
+    final fb = _fallbackCoords();
     for (final q in queries) {
-      res = await _geo.searchAddress(q);
+      res = await _geo.searchAddress(q, lat: fb.lat, lon: fb.lng);
       if (res != null) break;
     }
-    final fb = _fallbackCoords();
     _lat = res?.lat ?? fb.lat;
     _lng = res?.lon ?? fb.lng;
 
