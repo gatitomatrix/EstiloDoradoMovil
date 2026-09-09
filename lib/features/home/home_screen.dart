@@ -130,6 +130,40 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
+  void _quickAddToCart(Product product) {
+    if (product.stock <= 0) {
+      AppSnackBar.err(context, 'Producto agotado');
+      return;
+    }
+    final cart = context.read<CartProvider>();
+    final result = cart.addItem(
+      CartItem(
+        id: product.id,
+        nombre: product.nombre,
+        precio: product.precioVenta,
+        precioLista: product.precioLista,
+        imagenUrl: product.imagenUrl ?? '',
+        stockMax: product.stock,
+        cantidad: 1,
+      ),
+    );
+    switch (result) {
+      case CartAddResult.added:
+        AppSnackBar.ok(
+          context,
+          '${product.nombre} agregado al carrito',
+          actionLabel: 'Ver carrito',
+          onAction: () => context.push('/cart'),
+        );
+      case CartAddResult.increased:
+        AppSnackBar.ok(context, 'Cantidad actualizada (máx. ${product.stock})');
+      case CartAddResult.atLimit:
+        AppSnackBar.warn(context, 'Solo hay ${product.stock} unidades disponibles');
+      case CartAddResult.outOfStock:
+        AppSnackBar.err(context, 'Producto agotado');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -448,31 +482,72 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
   }
 
   Widget _buildProductCard(BuildContext context, Product product) {
-    return GestureDetector(
-      onTap: () => context.push('/producto/${product.id}'),
-      child: Card(
-        elevation: 6,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        clipBehavior: Clip.hardEdge,
+    final canAdd = product.stock > 0;
+    return Card(
+      elevation: 6,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      clipBehavior: Clip.hardEdge,
+      child: InkWell(
+        onTap: () => context.push('/producto/${product.id}'),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             AspectRatio(
               aspectRatio: 1.05,
-              child: Hero(
-                tag: 'product-${product.id}',
-                child: CachedNetworkImage(
-                  imageUrl: product.imagenUrl ?? '',
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
+                    tag: 'product-${product.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: product.imagenUrl ?? '',
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported, size: 70),
+                      ),
+                    ),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 70),
+                  Positioned(
+                    right: 6,
+                    bottom: 6,
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        customBorder: const CircleBorder(),
+                        onTap: canAdd ? () => _quickAddToCart(product) : null,
+                        child: Opacity(
+                          opacity: canAdd ? 1 : 0.4,
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black54, blurRadius: 5, offset: Offset(0, 1)),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/icons/agregar-carrito.png',
+                                fit: BoxFit.cover,
+                                errorBuilder: (_, __, ___) => const CircleAvatar(
+                                  backgroundColor: Color(0xFF1A1408),
+                                  child: Icon(Icons.add_shopping_cart, color: Color(0xFFD4AF37), size: 20),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
             Flexible(
