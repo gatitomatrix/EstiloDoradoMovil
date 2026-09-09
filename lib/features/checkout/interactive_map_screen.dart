@@ -88,7 +88,9 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
         final display = (rev['display'] ?? '').trim();
         if (via.isNotEmpty) _viaRev = via;
         if (num.isNotEmpty) _numRev = num;
-        if (display.isNotEmpty) {
+        final coordOnly = RegExp(r'^ubicaci[oó]n\s+-?\d', caseSensitive: false).hasMatch(display)
+            || RegExp(r'^-?\d+(\.\d+)?\s*,\s*-?\d').hasMatch(display);
+        if (display.isNotEmpty && !coordOnly) {
           _hint = display;
         } else if ((_viaRev ?? '').isNotEmpty) {
           _hint = '${_viaRev!} ${_numRev ?? ''}'.trim();
