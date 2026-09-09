@@ -481,8 +481,42 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, Product product) {
+  Widget _addCartButton(Product product, {double size = 36}) {
     final canAdd = product.stock > 0;
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        onTap: canAdd ? () => _quickAddToCart(product) : null,
+        child: Opacity(
+          opacity: canAdd ? 1 : 0.4,
+          child: Container(
+            width: size,
+            height: size,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
+              boxShadow: const [
+                BoxShadow(color: Colors.black26, blurRadius: 3, offset: Offset(0, 1)),
+              ],
+            ),
+            child: ClipOval(
+              child: Image.asset(
+                'assets/icons/agregar-carrito.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const CircleAvatar(
+                  backgroundColor: Color(0xFF1A1408),
+                  child: Icon(Icons.add_shopping_cart, color: Color(0xFFD4AF37), size: 18),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProductCard(BuildContext context, Product product) {
     return Card(
       elevation: 6,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -494,67 +528,26 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           children: [
             AspectRatio(
               aspectRatio: 1.05,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Hero(
-                    tag: 'product-${product.id}',
-                    child: CachedNetworkImage(
-                      imageUrl: product.imagenUrl ?? '',
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: Colors.grey[200],
-                        child: const Center(child: CircularProgressIndicator()),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: Colors.grey[200],
-                        child: const Icon(Icons.image_not_supported, size: 70),
-                      ),
-                    ),
+              child: Hero(
+                tag: 'product-${product.id}',
+                child: CachedNetworkImage(
+                  imageUrl: product.imagenUrl ?? '',
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: Colors.grey[200],
+                    child: const Center(child: CircularProgressIndicator()),
                   ),
-                  Positioned(
-                    right: 6,
-                    bottom: 6,
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        customBorder: const CircleBorder(),
-                        onTap: canAdd ? () => _quickAddToCart(product) : null,
-                        child: Opacity(
-                          opacity: canAdd ? 1 : 0.4,
-                          child: Container(
-                            width: 40,
-                            height: 40,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFD4AF37), width: 1.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black54, blurRadius: 5, offset: Offset(0, 1)),
-                              ],
-                            ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/icons/agregar-carrito.png',
-                                fit: BoxFit.cover,
-                                errorBuilder: (_, __, ___) => const CircleAvatar(
-                                  backgroundColor: Color(0xFF1A1408),
-                                  child: Icon(Icons.add_shopping_cart, color: Color(0xFFD4AF37), size: 20),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[200],
+                    child: const Icon(Icons.image_not_supported, size: 70),
                   ),
-                ],
+                ),
               ),
             ),
             Flexible(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.fromLTRB(8, 4, 6, 4),
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -566,8 +559,8 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         fontSize: 15,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    if (product.enOferta) ...[
+                    const SizedBox(height: 2),
+                    if (product.enOferta)
                       Text(
                         'S/ ${product.precioLista.toStringAsFixed(2)}',
                         style: TextStyle(
@@ -576,7 +569,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                           decoration: TextDecoration.lineThrough,
                         ),
                       ),
-                    ],
                     Text(
                       'S/ ${product.precioVenta.toStringAsFixed(2)}',
                       style: const TextStyle(
@@ -585,13 +577,22 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         color: Color(0xFFD4AF37),
                       ),
                     ),
-                    Text(
-                      product.stock > 0 ? 'Stock ${product.stock}' : 'Agotado',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: product.stock > 0 ? Colors.green.shade800 : Colors.red.shade700,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    const Spacer(),
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            product.stock > 0 ? 'Stock ${product.stock}' : 'Agotado',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: product.stock > 0 ? Colors.green.shade800 : Colors.red.shade700,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        _addCartButton(product),
+                      ],
                     ),
                   ],
                 ),
