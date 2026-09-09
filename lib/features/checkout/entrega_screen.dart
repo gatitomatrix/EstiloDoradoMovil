@@ -323,25 +323,20 @@ class _EntregaScreenState extends State<EntregaScreen> {
       return;
     }
     setState(() => _loadingGeo = true);
+    String expand(String via) => via
+        .replaceAll(RegExp(r'\bAvda\.?\b', caseSensitive: false), 'Avenida')
+        .replaceAll(RegExp(r'\bAv\.?\b', caseSensitive: false), 'Avenida')
+        .replaceAll(RegExp(r'\bJr\.?\b', caseSensitive: false), 'Jirón')
+        .replaceAll(RegExp(r'\bCal\.?\b', caseSensitive: false), 'Calle')
+        .replaceAll(RegExp(r'\bPje\.?\b', caseSensitive: false), 'Pasaje')
+        .trim();
+    final via = expand(_viaCtrl.text.trim());
+    final num = _numCtrl.text.trim();
     final queries = [
-      [
-        _viaCtrl.text.trim(),
-        _numCtrl.text.trim(),
-        _dist,
-        _prov,
-        _dep,
-        'Perú',
-      ].where((e) => e != null && e.toString().isNotEmpty).join(', '),
-      [
-        _viaCtrl.text.trim(),
-        _dist,
-        _prov,
-        _dep,
-        'Perú',
-      ].where((e) => e != null && e.toString().isNotEmpty).join(', '),
-      [_dist, _prov, _dep, 'Perú']
-          .where((e) => e != null && e.toString().isNotEmpty)
-          .join(', '),
+      [via, num, _dist, 'Lima', 'Perú'].where((e) => e != null && e.toString().isNotEmpty).join(', '),
+      [via, num, _dist, _prov, 'Perú'].where((e) => e != null && e.toString().isNotEmpty).join(', '),
+      [via, _dist, 'Perú'].where((e) => e != null && e.toString().isNotEmpty).join(', '),
+      [via, num, 'Lima', 'Perú'].where((e) => e != null && e.toString().isNotEmpty).join(', '),
     ];
 
     ({double lat, double lon})? res;
