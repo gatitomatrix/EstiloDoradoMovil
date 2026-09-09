@@ -52,6 +52,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         return;
       }
 
+      if (res['google'] == true) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(res['message']?.toString() ??
+                'Esta cuenta entra con Google. Usa Continuar con Google.'),
+            backgroundColor: Colors.blueGrey,
+          ),
+        );
+        return;
+      }
+
       setState(() {
         _emailOk = _emailController.text.trim();
         _step = 2;

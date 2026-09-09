@@ -28,6 +28,7 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
   final _authService = AuthService();
   bool _isLoading = true;
   bool _isSaving = false;
+  bool _esGoogle = false;
 
   @override
   void initState() {
@@ -72,6 +73,8 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
       _telefonoController.text = (user['telefono'] ?? '').toString();
       _direccionController.text = (user['direccion'] ?? '').toString();
       _emailController.text = (user['email'] ?? '').toString();
+      _esGoogle = user['es_google'] == true ||
+          (user['auth_provider']?.toString() ?? '') == 'google';
     }
 
     setState(() => _isLoading = false);
@@ -247,8 +250,14 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                       style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
+                    if (_esGoogle) ...[
+                      const Text(
+                        'Esta cuenta entra con Google. No usa contraseña de Estilo Dorado. Cámbiala en tu cuenta de Google.',
+                        style: TextStyle(color: Colors.grey, fontSize: 13),
+                      ),
+                    ] else ...[
                     const Text(
-                      'Si solo entras con Google, usa “¿Olvidaste tu contraseña?” en el login.',
+                      'Si creaste la cuenta con correo, puedes cambiar la clave aquí.',
                       style: TextStyle(color: Colors.grey, fontSize: 13),
                     ),
                     const SizedBox(height: 12),
@@ -292,6 +301,7 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
                       onPressed: () => context.push('/recuperar'),
                       child: const Text('¿Olvidaste tu contraseña?'),
                     ),
+                    ],
                     const SizedBox(height: 12),
                     Center(
                       child: TextButton(

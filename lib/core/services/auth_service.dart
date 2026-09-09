@@ -218,6 +218,7 @@ class AuthService {
       });
       return {
         'success': true,
+        'google': response.data is Map && response.data['google'] == true,
         'message': response.data is Map
             ? (response.data['message']?.toString() ??
                 'Si el correo está registrado, te enviamos un código.')

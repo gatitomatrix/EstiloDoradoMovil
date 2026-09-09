@@ -15,6 +15,12 @@ class AuthProvider extends ChangeNotifier {
   String? get nextRouteAfterLogin => _nextRouteAfterLogin;
   String? get lastError => _lastError;
 
+  bool get isGoogleAccount {
+    if (_user == null) return false;
+    if (_user!['es_google'] == true) return true;
+    return (_user!['auth_provider']?.toString() ?? '') == 'google';
+  }
+
   /// Verifica si hay sesión al arrancar la app
   Future<void> checkAuth() async {
     _isLoggedIn = await _authService.isLoggedIn();
