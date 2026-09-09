@@ -58,6 +58,8 @@ class ProductProvider extends ChangeNotifier {
   }
 
   List<Product> get catalog => List.unmodifiable(_all);
+  bool get isLoading => _isLoading;
+  bool get loaded => _loaded;
   String? get error => _error;
   String get search => _search;
   String get chip => _chip;
