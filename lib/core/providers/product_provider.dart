@@ -42,7 +42,19 @@ class ProductProvider extends ChangeNotifier {
   List<Product> get products {
     var list = List<Product>.from(_all);
     if (_search.isNotEmpty) {
+      final q = _search.toLowerCase();
       list = list.where((p) => p.matches(_search)).toList();
+      list.sort((a, b) {
+        final an = a.nombre.toLowerCase();
+        final bn = b.nombre.toLowerCase();
+        int rank(String n) {
+          if (n == q) return 0;
+          if (n.startsWith(q)) return 1;
+          if (n.contains(q)) return 2;
+          return 3;
+        }
+        return rank(an).compareTo(rank(bn));
+      });
     }
     if (_chip.isNotEmpty && _chip != 'Todos') {
       final keys = chipKeys[_chip] ?? [_chip.toLowerCase()];

@@ -32,8 +32,8 @@ class Product {
     if (t.isEmpty) return true;
     final name = nombre.toLowerCase();
     final tags = (etiquetas ?? '').toLowerCase();
-    if (name.contains(t) || tags.contains(t)) return true;
     final tokens = t.split(RegExp(r'\s+')).where((x) => x.isNotEmpty).toList();
+
     bool inHay(String hay) {
       return tokens.every((tok) {
         if (RegExp(r'^\d+$').hasMatch(tok)) {
@@ -43,6 +43,10 @@ class Product {
       });
     }
 
+    if (tokens.length == 1) {
+      if (name.contains(t) || tags.contains(t)) return true;
+      if (RegExp(r'^\d+$').hasMatch(t) && id.toString() == t) return true;
+    }
     if (inHay(name) || inHay(tags)) return true;
     if (tokens.length == 1 && tokens.first.length >= 3) {
       return (descripcion ?? '').toLowerCase().contains(tokens.first);

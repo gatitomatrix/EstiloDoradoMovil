@@ -254,6 +254,11 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 child: TextField(
                   controller: _searchCtrl,
                   textInputAction: TextInputAction.search,
+                  onChanged: (v) {
+                    setState(() {});
+                    Provider.of<ProductProvider>(context, listen: false)
+                        .setSearch(v);
+                  },
                   onSubmitted: _runSearch,
                   decoration: InputDecoration(
                     hintText: 'Buscar productos…',
