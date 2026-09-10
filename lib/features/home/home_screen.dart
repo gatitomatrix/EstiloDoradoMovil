@@ -287,7 +287,6 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       borderSide: const BorderSide(color: Color(0xFFE7DAC6)),
                     ),
                   ),
-                  onChanged: (_) => setState(() {}),
                 ),
               ),
             ),
