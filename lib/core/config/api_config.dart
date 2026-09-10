@@ -43,6 +43,7 @@ class ApiConfig {
 
   /// Chatbot / asistente IA (Ollama o Gemini vía Laravel)
   static const String asistente = '/asistente';
+  static const String asistenteFeedback = '/asistente/feedback';
 
   // Geo
   static const String geoSearch = '/geo/search';

@@ -90,6 +90,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     'Cerdita tiburón',
     '¿Cómo compro?',
   ];
+  final Map<int, String> _votes = {};
 
   @override
   void initState() {
@@ -318,6 +319,14 @@ class _AssistantScreenState extends State<AssistantScreen> {
     context.push(url);
   }
 
+  void _vote(dynamic rawId, String voto) {
+    final id = int.tryParse(rawId?.toString() ?? '');
+    if (id == null) return;
+    if (_votes[id] == voto) return;
+    setState(() => _votes[id] = voto);
+    _svc.feedback(id, voto);
+  }
+
   void _askConfirm(Map<String, dynamic> p, {int qty = 1}) {
     final id = int.tryParse(p['id']?.toString() ?? '');
     if (id == null) return;
@@ -376,6 +385,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
     _scrollToEnd();
 
     if (result == CartAddResult.added || result == CartAddResult.increased) {
+      _svc.feedback(pending.id, 'add');
       AppSnackBar.ok(
         context,
         reply,
@@ -691,6 +701,26 @@ class _AssistantScreenState extends State<AssistantScreen> {
                         visualDensity: VisualDensity.compact,
                       ),
                       child: Text(agotado ? 'Agotado' : 'Agregar'),
+                    ),
+                    IconButton(
+                      tooltip: 'Me gusta',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _vote(id, 'up'),
+                      icon: Icon(
+                        _votes[id] == 'up' ? Icons.thumb_up : Icons.thumb_up_outlined,
+                        size: 18,
+                        color: _votes[id] == 'up' ? const Color(0xFF8A6D1D) : Colors.black54,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'No me gusta',
+                      visualDensity: VisualDensity.compact,
+                      onPressed: () => _vote(id, 'down'),
+                      icon: Icon(
+                        _votes[id] == 'down' ? Icons.thumb_down : Icons.thumb_down_outlined,
+                        size: 18,
+                        color: _votes[id] == 'down' ? const Color(0xFF8A6D1D) : Colors.black54,
+                      ),
                     ),
                   ],
                 ),

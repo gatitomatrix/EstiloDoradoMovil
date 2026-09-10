@@ -145,4 +145,15 @@ class AssistantService {
       throw ApiException(message: msg, statusCode: e.response?.statusCode);
     }
   }
+
+  Future<void> feedback(int idProducto, String voto) async {
+    try {
+      await _api.post(ApiConfig.asistenteFeedback, {
+        'id_producto': idProducto,
+        'voto': voto,
+      });
+    } catch (_) {
+      // el chat no debe romperse si el voto no llega
+    }
+  }
 }
