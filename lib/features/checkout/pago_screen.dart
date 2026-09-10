@@ -697,8 +697,7 @@ class _PagoScreenState extends State<PagoScreen> {
             title: 'Pagos con Culqi',
             body:
                 'Contamos con la pasarela Culqi para una experiencia segura. '
-                'En la app el cobro se simula (modo prueba) y el pedido se confirma en el servidor. '
-                'Tarjetas de prueba abajo en el método Tarjeta.',
+                'Yape y tarjeta se confirman en el servidor antes de registrar el pedido.',
           ),
           if (checkout.mode == DeliveryMode.express)
             _infoBanner(
@@ -748,11 +747,6 @@ class _PagoScreenState extends State<PagoScreen> {
                           border: OutlineInputBorder(),
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Modo prueba: usa cualquier código de 6 dígitos (ej. 123456).',
-                        style: TextStyle(fontSize: 12, color: Colors.grey[600]),
-                      ),
                     ],
                   )
                 : null,
@@ -772,7 +766,6 @@ class _PagoScreenState extends State<PagoScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Número de tarjeta',
                           border: OutlineInputBorder(),
-                          hintText: '4111 1111 1111 1111',
                         ),
                       ),
                       const SizedBox(height: 8),
@@ -786,7 +779,6 @@ class _PagoScreenState extends State<PagoScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'MM/AA',
                                 border: OutlineInputBorder(),
-                                hintText: '12/28',
                               ),
                             ),
                           ),
@@ -800,30 +792,10 @@ class _PagoScreenState extends State<PagoScreen> {
                               decoration: const InputDecoration(
                                 labelText: 'CVV',
                                 border: OutlineInputBorder(),
-                                hintText: '123',
                               ),
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(height: 10),
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.blue.shade100),
-                        ),
-                        child: Text(
-                          'Tarjetas de prueba Culqi (sandbox):\n'
-                          '• Visa OK: 4111 1111 1111 1111\n'
-                          '• Mastercard OK: 5111 1111 1111 1118\n'
-                          '• CVV: 123  ·  Exp: cualquier mes/año futuro (ej. 12/28)\n'
-                          '• Rechazada: 4000 0000 0000 0002\n'
-                          'En esta app el cobro es simulado; no se cobra dinero real.',
-                          style: TextStyle(fontSize: 12, color: Colors.blue.shade900, height: 1.35),
-                        ),
                       ),
                     ],
                   )

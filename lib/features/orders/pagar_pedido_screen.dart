@@ -230,20 +230,6 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2B2B2B),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'Pago simulado (modo prueba). No se cobra dinero real. '
-              'Visa OK: 4111 1111 1111 1111 · CVV 123 · Exp 12/28',
-              style: TextStyle(color: Colors.grey[200], fontSize: 13, height: 1.35),
-            ),
-          ),
           const SizedBox(height: 16),
           const Text('Método de pago', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           RadioListTile<String>(
@@ -290,7 +276,6 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
               decoration: const InputDecoration(
                 labelText: 'Número de tarjeta',
                 border: OutlineInputBorder(),
-                hintText: '4111 1111 1111 1111',
               ),
             ),
             const SizedBox(height: 8),
@@ -304,7 +289,6 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
                     decoration: const InputDecoration(
                       labelText: 'MM/AA',
                       border: OutlineInputBorder(),
-                      hintText: '12/28',
                     ),
                   ),
                 ),
@@ -318,7 +302,6 @@ class _PagarPedidoScreenState extends State<PagarPedidoScreen> {
                     decoration: const InputDecoration(
                       labelText: 'CVV',
                       border: OutlineInputBorder(),
-                      hintText: '123',
                     ),
                   ),
                 ),
