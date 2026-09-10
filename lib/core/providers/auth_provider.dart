@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  // Token del cliente. nextRouteAfterLogin = Dori/carrito te trajo acá y te devuelve.
   final AuthService _authService = AuthService();
 
   bool _isLoggedIn = false;

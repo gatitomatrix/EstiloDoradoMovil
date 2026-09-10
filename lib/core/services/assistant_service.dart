@@ -112,6 +112,7 @@ class AssistantReply {
 }
 
 class AssistantService {
+  // Dori. Mismo POST /asistente que la web. Si hay token, ve pedidos.
   final ApiService _api = ApiService();
 
   Future<AssistantReply> send(String message, {List<int> offeredIds = const [], String? awaiting, Map<String, dynamic>? complaint}) async {

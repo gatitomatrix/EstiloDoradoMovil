@@ -71,6 +71,7 @@ class CartItem {
 enum CartAddResult { added, increased, atLimit, outOfStock }
 
 class CartProvider extends ChangeNotifier {
+  // Carrito local. Respeta stock. Al loguearse no mezclar el carrito de otra cuenta.
   final List<CartItem> _items = [];
   final FlutterSecureStorage _storage = const FlutterSecureStorage();
   int? _userId;

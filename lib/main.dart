@@ -10,6 +10,7 @@ import 'core/providers/checkout_provider.dart';
 import 'core/providers/payment_provider.dart';
 
 void main() {
+  // Misma API que la web (Render). Auth + carrito + catálogo + checkout.
   runApp(
     MultiProvider(
       providers: [

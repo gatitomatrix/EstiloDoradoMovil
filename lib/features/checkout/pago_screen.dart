@@ -16,6 +16,7 @@ import '../../core/utils/tarifa_envio.dart';
 const _gold = Color(0xFFD4AF37);
 
 class PagoScreen extends StatefulWidget {
+  // Igual que la web: efectivo recojo sin boleta. Culqi pide BO/FA y luego cobra.
   const PagoScreen({super.key});
 
   @override

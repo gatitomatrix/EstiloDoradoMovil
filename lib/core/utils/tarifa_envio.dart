@@ -1,4 +1,5 @@
 class TarifaEnvio {
+  // Pasco 5 domicilio (sin Shalom). Huancayo agencia 12 + 5 dir. Lima agencia 12 + 10 dir.
   final double costo;
   final String zona;
   final String etiqueta;

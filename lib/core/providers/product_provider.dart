@@ -4,6 +4,7 @@ import '../services/product_service.dart';
 import '../models/product_model.dart';
 
 class ProductProvider extends ChangeNotifier {
+  // Catálogo en memoria. El buscador filtra con Product.matches (nombre, no descripción).
   final ProductService _service = ProductService();
 
   List<Product> _all = [];

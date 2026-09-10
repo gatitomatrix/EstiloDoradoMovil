@@ -16,6 +16,7 @@ import '../../core/utils/whatsapp.dart';
 import '../../core/services/product_service.dart';
 
 class HomeScreen extends StatefulWidget {
+  // Tienda. Buscar filtra al escribir. Cinta de promo si hay campaña.
   const HomeScreen({super.key});
 
   @override

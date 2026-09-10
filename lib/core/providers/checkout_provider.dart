@@ -6,6 +6,7 @@ import '../models/checkout_models.dart';
 import '../utils/tarifa_envio.dart';
 
 class CheckoutProvider extends ChangeNotifier {
+  // Recojo / envío / fee. Misma idea que CheckoutService de la web.
   static const _k = 'ed_checkout_state';
 
   DeliveryMode mode = DeliveryMode.none;

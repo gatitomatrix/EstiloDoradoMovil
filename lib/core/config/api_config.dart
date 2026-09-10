@@ -1,5 +1,6 @@
 // lib/core/config/api_config.dart
 class ApiConfig {
+  // Misma API que estilodorado.net.pe. No apuntar a XAMPP salvo que yo lo pida.
   /// Por defecto: API en Render (mismo backend que estilodorado.net.pe).
   /// Local XAMPP: flutter run --dart-define=API_BASE=http://10.0.2.2:8000/api
   static const String baseUrl = String.fromEnvironment(

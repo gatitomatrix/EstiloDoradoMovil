@@ -11,6 +11,7 @@ import '../../core/services/google_sign_in_helper.dart';
 import 'privacidad_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  // Correo o Google. Si venías del carrito/Dori, AuthProvider te regresa ahí.
   const LoginScreen({super.key});
 
   @override

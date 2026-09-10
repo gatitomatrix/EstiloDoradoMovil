@@ -1,5 +1,6 @@
 // lib/core/models/product_model.dart
 class Product {
+  // matches(): "Detalle Personalizado 1" es el 1, no el 10 ni las cajitas.
   final int id;
   final String nombre;
   final String? descripcion;

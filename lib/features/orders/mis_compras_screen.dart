@@ -9,6 +9,7 @@ import '../../core/services/order_service.dart';
 const _gold = Color(0xFFD4AF37);
 
 class MisComprasScreen extends StatefulWidget {
+  // Pedidos del cliente. PDF si pagó Culqi. Recojo efectivo queda pendiente.
   final int? highlightId;
   const MisComprasScreen({super.key, this.highlightId});
 

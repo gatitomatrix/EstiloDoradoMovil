@@ -61,6 +61,7 @@ class _ChatMsg {
 }
 
 class AssistantScreen extends StatefulWidget {
+  // Chat de Dori. Si pide login, no mato el chat: vuelves y sigue.
   const AssistantScreen({super.key});
 
   @override

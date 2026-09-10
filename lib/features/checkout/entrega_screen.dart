@@ -18,6 +18,7 @@ import 'interactive_map_screen.dart';
 const _gold = Color(0xFFD4AF37);
 
 class EntregaScreen extends StatefulWidget {
+  // Recojo vs envío. Pasco domicilio 5. Lima/Huancayo: Shalom o extra a domicilio.
   const EntregaScreen({super.key});
 
   @override

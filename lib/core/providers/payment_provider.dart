@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import '../models/checkout_models.dart';
 
 class PaymentProvider extends ChangeNotifier {
+  // BO o FA. Recojo efectivo no pide esto. Culqi sí, antes de la tarjeta.
   InvoiceData? invoice;
   BoletaData? boleta;
   String? selectedDoc; // FA | BO

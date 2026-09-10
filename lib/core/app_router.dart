@@ -1,5 +1,5 @@
 // lib/core/app_router.dart
-// App móvil = cliente (tienda). El panel admin vive en la web (Angular), según alcance del proyecto.
+// App = solo cliente. El admin es la web (/panel-ed-k7m2). Home → carrito → entrega → pago.
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
