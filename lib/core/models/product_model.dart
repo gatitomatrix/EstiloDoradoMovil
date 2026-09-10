@@ -30,7 +30,24 @@ class Product {
   bool matches(String q) {
     final t = q.trim().toLowerCase();
     if (t.isEmpty) return true;
-    return haystack.contains(t);
+    final name = nombre.toLowerCase();
+    final tags = (etiquetas ?? '').toLowerCase();
+    if (name.contains(t) || tags.contains(t)) return true;
+    final tokens = t.split(RegExp(r'\s+')).where((x) => x.isNotEmpty).toList();
+    bool inHay(String hay) {
+      return tokens.every((tok) {
+        if (RegExp(r'^\d+$').hasMatch(tok)) {
+          return RegExp('(?:^|[^0-9])$tok(?:[^0-9]|\$)').hasMatch(hay);
+        }
+        return hay.contains(tok);
+      });
+    }
+
+    if (inHay(name) || inHay(tags)) return true;
+    if (tokens.length == 1 && tokens.first.length >= 3) {
+      return (descripcion ?? '').toLowerCase().contains(tokens.first);
+    }
+    return false;
   }
 
   factory Product.fromJson(Map<String, dynamic> json) {
