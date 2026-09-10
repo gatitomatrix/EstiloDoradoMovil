@@ -666,7 +666,9 @@ class _AssistantScreenState extends State<AssistantScreen> {
                     child: Text(
                       infoOnly
                           ? '$nombre\nProducto del pedido (referencia)'
-                          : '$nombre\nS/ ${precio is num ? precio.toStringAsFixed(2) : precio} · stock $stock',
+                          : agotado
+                              ? '$nombre\nAgotado'
+                              : '$nombre\nS/ ${precio is num ? precio.toStringAsFixed(2) : precio} · stock $stock',
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),

@@ -528,20 +528,45 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           children: [
             AspectRatio(
               aspectRatio: 1.05,
-              child: Hero(
-                tag: 'product-${product.id}',
-                child: CachedNetworkImage(
-                  imageUrl: product.imagenUrl ?? '',
-                  fit: BoxFit.cover,
-                  placeholder: (context, url) => Container(
-                    color: Colors.grey[200],
-                    child: const Center(child: CircularProgressIndicator()),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  Hero(
+                    tag: 'product-${product.id}',
+                    child: CachedNetworkImage(
+                      imageUrl: product.imagenUrl ?? '',
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: Colors.grey[200],
+                        child: const Center(child: CircularProgressIndicator()),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: Colors.grey[200],
+                        child: const Icon(Icons.image_not_supported, size: 70),
+                      ),
+                    ),
                   ),
-                  errorWidget: (context, url, error) => Container(
-                    color: Colors.grey[200],
-                    child: const Icon(Icons.image_not_supported, size: 70),
-                  ),
-                ),
+                  if (product.stock < 1) ...[
+                    const ColoredBox(color: Color(0x55000000)),
+                    Center(
+                      child: Container(
+                        width: double.infinity,
+                        color: const Color(0xEB8B1E1E),
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: const Text(
+                          'AGOTADO',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: 2.2,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             Flexible(

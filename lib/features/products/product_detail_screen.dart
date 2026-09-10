@@ -178,21 +178,50 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           children: [
             Hero(
               tag: 'product-${product.id}',
-              child: CachedNetworkImage(
-                imageUrl: product.imagenUrl ?? '',
-                width: double.infinity,
-                height: 320,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  height: 320,
-                  color: Colors.grey[200],
-                  child: const Center(child: CircularProgressIndicator()),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  height: 320,
-                  color: Colors.grey[200],
-                  child: const Icon(Icons.image_not_supported, size: 100),
-                ),
+              child: Stack(
+                children: [
+                  CachedNetworkImage(
+                    imageUrl: product.imagenUrl ?? '',
+                    width: double.infinity,
+                    height: 320,
+                    fit: BoxFit.cover,
+                    placeholder: (context, url) => Container(
+                      height: 320,
+                      color: Colors.grey[200],
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 320,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.image_not_supported, size: 100),
+                    ),
+                  ),
+                  if (product.stock < 1)
+                    Positioned.fill(
+                      child: Stack(
+                        children: [
+                          const ColoredBox(color: Color(0x55000000), child: SizedBox.expand()),
+                          Center(
+                            child: Container(
+                              width: double.infinity,
+                              color: const Color(0xEB8B1E1E),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              child: const Text(
+                                'AGOTADO',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: 2.4,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
               ),
             ),
             Padding(
