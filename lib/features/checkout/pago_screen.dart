@@ -209,6 +209,11 @@ class _PagoScreenState extends State<PagoScreen> {
       _toast('El pago en efectivo solo está disponible para retiro en tienda.');
       return;
     }
+    if (!checkout.telefonoOk) {
+      _toast('Indica un celular de 9 dígitos para recordarte el recojo.');
+      context.go('/entrega');
+      return;
+    }
     if (cart.items.isEmpty) {
       _toast('Tu carrito está vacío.');
       return;

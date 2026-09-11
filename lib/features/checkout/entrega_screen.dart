@@ -500,7 +500,8 @@ class _EntregaScreenState extends State<EntregaScreen> {
                   ),
                 ),
               ],
-              if (checkout.mode == DeliveryMode.express) ...[
+              if (checkout.mode == DeliveryMode.express ||
+                  checkout.mode == DeliveryMode.storePickup) ...[
                 const SizedBox(height: 12),
                 TextField(
                   controller: _telCtrl,
@@ -508,12 +509,16 @@ class _EntregaScreenState extends State<EntregaScreen> {
                   maxLength: 9,
                   inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                   decoration: InputDecoration(
-                    labelText: 'Celular de contacto',
+                    labelText: checkout.mode == DeliveryMode.storePickup
+                        ? 'Celular para recordarte el recojo'
+                        : 'Celular de contacto',
                     prefixText: '+51 ',
                     hintText: '9xxxxxxxx',
                     counterText: '',
-                    helperText: 'Lo usará Shalom o el motorizado',
-                    errorText: checkout.envioListo && !checkout.telefonoOk
+                    helperText: checkout.mode == DeliveryMode.storePickup
+                        ? 'Si pasa un día, te escribimos por WhatsApp'
+                        : 'Lo usará Shalom o el motorizado',
+                    errorText: !checkout.telefonoOk
                         ? '9 dígitos, empieza con 9'
                         : null,
                     border: const OutlineInputBorder(),
@@ -528,14 +533,26 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 total: total,
                 enabled: _listo &&
                     checkout.mode != DeliveryMode.none &&
-                    (checkout.mode != DeliveryMode.express ||
-                        !checkout.envioListo ||
-                        checkout.telefonoOk),
+                    ((checkout.mode == DeliveryMode.storePickup &&
+                            checkout.telefonoOk) ||
+                        (checkout.mode == DeliveryMode.express &&
+                            (!checkout.envioListo || checkout.telefonoOk))),
                 buttonLabel: checkout.mode == DeliveryMode.storePickup || checkout.envioListo
                     ? 'Ir a pagar'
                     : 'Elegir lugar de envío',
                 onPressed: () {
                   if (checkout.mode == DeliveryMode.storePickup) {
+                    if (!checkout.telefonoOk) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Indica un celular de 9 dígitos (empieza con 9) para recordarte el recojo',
+                          ),
+                          behavior: SnackBarBehavior.floating,
+                        ),
+                      );
+                      return;
+                    }
                     context.push('/pago');
                     return;
                   }

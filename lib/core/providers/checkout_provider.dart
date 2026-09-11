@@ -39,7 +39,7 @@ class CheckoutProvider extends ChangeNotifier {
   bool get telefonoOk => Celular.cliente(telefono).length == 9;
 
   bool get canPay =>
-      mode == DeliveryMode.storePickup ||
+      (mode == DeliveryMode.storePickup && telefonoOk) ||
       (mode == DeliveryMode.express && envioListo && telefonoOk);
 
   bool get canCash => mode == DeliveryMode.storePickup;
