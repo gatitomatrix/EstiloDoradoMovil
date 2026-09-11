@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/utils/input_formatters.dart';
+import '../../core/utils/celular.dart';
 
 class MiCuentaScreen extends StatefulWidget {
   const MiCuentaScreen({super.key});
@@ -88,7 +89,7 @@ class _MiCuentaScreenState extends State<MiCuentaScreen> {
     final ok = await Provider.of<AuthProvider>(context, listen: false).updateProfile(
       nombre: _nombreController.text.trim(),
       apellido: _apellidoController.text.trim(),
-      telefono: _telefonoController.text.trim(),
+      telefono: Celular.cliente(_telefonoController.text.trim()),
       direccion: _direccionController.text.trim(),
     );
 

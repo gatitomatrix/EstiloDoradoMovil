@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/checkout_models.dart';
 import '../utils/tarifa_envio.dart';
+import '../utils/celular.dart';
 
 class CheckoutProvider extends ChangeNotifier {
   // Recojo / envío / fee. Misma idea que CheckoutService de la web.
@@ -16,6 +17,7 @@ class CheckoutProvider extends ChangeNotifier {
   double discount = 0;
   bool pendingEditAddress = false;
   String telefono = '';
+  int? telefonoUserId;
 
   double totalWith(double subtotal) => subtotal + fee - discount;
 
@@ -34,7 +36,7 @@ class CheckoutProvider extends ChangeNotifier {
     return false;
   }
 
-  bool get telefonoOk => RegExp(r'^9\d{8}$').hasMatch(telefono);
+  bool get telefonoOk => Celular.cliente(telefono).length == 9;
 
   bool get canPay =>
       mode == DeliveryMode.storePickup ||
@@ -73,8 +75,9 @@ class CheckoutProvider extends ChangeNotifier {
       }
       fee = (j['fee'] as num?)?.toDouble() ?? 0;
       discount = (j['discount'] as num?)?.toDouble() ?? 0;
-      telefono = (j['telefono']?.toString() ?? '').replaceAll(RegExp(r'\D'), '');
-      if (telefono.length > 9) telefono = telefono.substring(0, 9);
+      telefono = Celular.cliente(j['telefono']?.toString());
+      final uid = j['telefonoUserId'];
+      telefonoUserId = uid is int ? uid : int.tryParse('${uid ?? ''}');
       notifyListeners();
     } catch (_) {}
   }
@@ -91,6 +94,7 @@ class CheckoutProvider extends ChangeNotifier {
           'fee': fee,
           'discount': discount,
           'telefono': telefono,
+          'telefonoUserId': telefonoUserId,
         }),
       );
     } catch (_) {}
@@ -118,8 +122,25 @@ class CheckoutProvider extends ChangeNotifier {
 
   void setTelefono(String raw) {
     var d = raw.replaceAll(RegExp(r'\D'), '');
+    if (d.startsWith('51') && d.length >= 11) d = d.substring(2);
     if (d.length > 9) d = d.substring(0, 9);
+    if (d.length == 9 && Celular.cliente(d).isEmpty) d = '';
     telefono = d;
+    notifyListeners();
+    _persist();
+  }
+
+  void bindCliente(int? userId, String? profileTel) {
+    final profile = Celular.cliente(profileTel);
+    if (userId == null || telefonoUserId != userId) {
+      telefono = profile;
+      telefonoUserId = userId;
+      notifyListeners();
+      _persist();
+      return;
+    }
+    final actual = Celular.cliente(telefono);
+    telefono = actual.isNotEmpty ? actual : profile;
     notifyListeners();
     _persist();
   }
@@ -207,6 +228,8 @@ class CheckoutProvider extends ChangeNotifier {
     address = null;
     fee = 0;
     discount = 0;
+    telefono = '';
+    telefonoUserId = null;
     notifyListeners();
     _persist();
   }

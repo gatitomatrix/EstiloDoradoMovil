@@ -8,6 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 
 import '../../core/providers/auth_provider.dart';
 import '../../core/providers/cart_provider.dart';
+import '../../core/providers/checkout_provider.dart';
 import '../../core/providers/product_provider.dart';
 import '../../core/models/product_model.dart';
 import '../../core/utils/app_snackbar.dart';
@@ -747,6 +748,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                 Navigator.pop(context);
                 await auth.logout();
                 if (context.mounted) {
+                  context.read<CheckoutProvider>().reset();
                   AppSnackBar.ok(context, 'Sesión cerrada');
                   context.go('/home');
                 }

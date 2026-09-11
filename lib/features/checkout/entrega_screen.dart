@@ -72,14 +72,10 @@ class _EntregaScreenState extends State<EntregaScreen> {
         context.read<CartProvider>().syncFromProducts(pp.catalog);
       });
       final c = context.read<CheckoutProvider>();
-      if (c.telefono.isEmpty) {
-        final raw = context.read<AuthProvider>().user?['telefono']?.toString() ?? '';
-        final d = raw.replaceAll(RegExp(r'\D'), '');
-        if (d.isNotEmpty) {
-          c.setTelefono(d);
-          _telCtrl.text = d;
-        }
-      } else if (_telCtrl.text.isEmpty && c.telefono.isNotEmpty) {
+      final uid = context.read<AuthProvider>().user?['id_cliente'];
+      final tel = context.read<AuthProvider>().user?['telefono']?.toString();
+      c.bindCliente(uid is int ? uid : int.tryParse('${uid ?? ''}'), tel);
+      if (_telCtrl.text != c.telefono) {
         _telCtrl.text = c.telefono;
       }
       if (c.consumeEditAddress()) {

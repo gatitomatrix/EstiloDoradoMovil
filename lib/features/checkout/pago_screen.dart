@@ -70,6 +70,12 @@ class _PagoScreenState extends State<PagoScreen> {
     });
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      final uid = auth.user?['id_cliente'];
+      context.read<CheckoutProvider>().bindCliente(
+            uid is int ? uid : int.tryParse('${uid ?? ''}'),
+            auth.user?['telefono']?.toString(),
+          );
       final pp = context.read<ProductProvider>();
       pp.loadProducts().then((_) {
         if (!mounted) return;

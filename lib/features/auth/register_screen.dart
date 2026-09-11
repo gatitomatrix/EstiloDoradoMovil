@@ -10,6 +10,7 @@ import '../../core/app_router.dart';
 import '../../core/config/api_config.dart';
 import '../../core/services/google_sign_in_helper.dart';
 import '../../core/utils/app_snackbar.dart';
+import '../../core/utils/celular.dart';
 import 'privacidad_screen.dart';
 
 const _gold = Color(0xFFD4AF37);
@@ -72,7 +73,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
           : _apellidoController.text.trim(),
       telefono: _telefonoController.text.trim().isEmpty
           ? null
-          : _telefonoController.text.trim(),
+          : (Celular.cliente(_telefonoController.text.trim()).isEmpty
+              ? null
+              : Celular.cliente(_telefonoController.text.trim())),
     );
 
     if (!mounted) return;
