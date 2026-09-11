@@ -73,6 +73,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
   static List<Map<String, dynamic>> _holdOffered = [];
   static String? _holdAwaiting;
   static Map<String, dynamic>? _holdComplaint;
+  static String? _holdOwner;
   static bool pendingLoginGuide = false;
   static String? pendingReplay;
 
@@ -92,6 +93,8 @@ class _AssistantScreenState extends State<AssistantScreen> {
     '¿Cómo compro?',
   ];
   final Map<int, String> _votes = {};
+  String? _sessionOwner;
+  VoidCallback? _authListener;
 
   @override
   void initState() {
@@ -102,15 +105,17 @@ class _AssistantScreenState extends State<AssistantScreen> {
       _awaiting = _holdAwaiting;
       _complaint = _holdComplaint;
     } else {
-      _msgs.add(
-        _ChatMsg(
-          text:
-              'Hola, soy Dori. ¿Te ayudo a elegir un regalo? Dime qué buscas o para quién es.',
-          fromUser: false,
-          driver: 'welcome',
-        ),
-      );
+      _msgs.add(_welcome());
     }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final auth = context.read<AuthProvider>();
+      _authListener = () {
+        if (mounted) _applyOwner(auth);
+      };
+      auth.addListener(_authListener!);
+      _applyOwner(auth);
+    });
   }
 
   @override
@@ -140,15 +145,68 @@ class _AssistantScreenState extends State<AssistantScreen> {
     }
   }
 
+  _ChatMsg _welcome() => _ChatMsg(
+        text:
+            'Hola, soy Dori. ¿Te ayudo a elegir un regalo? Dime qué buscas o para quién es.',
+        fromUser: false,
+        driver: 'welcome',
+      );
+
+  String _ownerId(AuthProvider a) {
+    final id = a.user?['id_cliente'] ?? a.user?['id'];
+    return a.isLoggedIn && id != null ? 'u:$id' : 'invitado';
+  }
+
+  void _applyOwner(AuthProvider auth) {
+    final owner = _ownerId(auth);
+    if (_sessionOwner == null) {
+      _sessionOwner = owner;
+      if (_holdOwner != null && _holdOwner != owner && !pendingLoginGuide) {
+        _resetForOwner(owner);
+      } else {
+        _holdOwner = owner;
+      }
+      return;
+    }
+    if (_sessionOwner == owner) return;
+    final keep = pendingLoginGuide && owner != 'invitado';
+    _sessionOwner = owner;
+    _holdOwner = owner;
+    if (!keep) {
+      _resetForOwner(owner);
+    } else {
+      _snap();
+    }
+  }
+
+  void _resetForOwner(String owner) {
+    _sessionOwner = owner;
+    _holdOwner = owner;
+    _offered = [];
+    _awaiting = null;
+    _complaint = null;
+    _msgs
+      ..clear()
+      ..add(_welcome());
+    _snap();
+    if (mounted) setState(() {});
+  }
+
   void _snap() {
     _holdMsgs = List<_ChatMsg>.from(_msgs);
     _holdOffered = List<Map<String, dynamic>>.from(_offered);
     _holdAwaiting = _awaiting;
     _holdComplaint = _complaint;
+    _holdOwner = _sessionOwner ?? 'invitado';
   }
 
   @override
   void dispose() {
+    if (_authListener != null) {
+      try {
+        context.read<AuthProvider>().removeListener(_authListener!);
+      } catch (_) {}
+    }
     _ctrl.dispose();
     _scroll.dispose();
     super.dispose();
