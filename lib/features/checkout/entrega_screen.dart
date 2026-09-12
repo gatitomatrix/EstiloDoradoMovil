@@ -580,7 +580,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
               ),
               const SizedBox(height: 24),
               Text(
-                '¿Necesitas ayuda? +51 904 811 627',
+                '¿Necesitas ayuda? +51 916 464 315',
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey[600], fontSize: 13),
               ),
