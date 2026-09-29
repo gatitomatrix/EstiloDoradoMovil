@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/providers/cart_provider.dart';
 import '../../core/providers/checkout_provider.dart';
 import '../../core/utils/tarifa_envio.dart';
+import '../../core/utils/input_formatters.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -240,19 +240,19 @@ class _ConfirmarEntregaScreenState extends State<ConfirmarEntregaScreen> {
                 TextField(
                   controller: _telCtrl,
                   keyboardType: TextInputType.phone,
-                  maxLength: 9,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: 12,
+                  inputFormatters: [CelularCheckoutFormatter()],
                   decoration: InputDecoration(
                     labelText: checkout.mode == DeliveryMode.storePickup
                         ? 'Celular para recordarte el recojo'
                         : 'Celular de contacto',
                     prefixText: '+51 ',
-                    hintText: '9xxxxxxxx',
+                    hintText: '987654321',
                     counterText: '',
-                    helperText: checkout.mode == DeliveryMode.storePickup
-                        ? 'Si pasa un día, te escribimos por WhatsApp'
-                        : 'Lo usará Shalom o el motorizado',
-                    errorText: !checkout.telefonoOk ? '9 dígitos, empieza con 9' : null,
+                    helperText: 'Solo 9 dígitos. No escribas +51 otra vez.',
+                    errorText: _telCtrl.text.startsWith('51')
+                        ? 'Quita el 51. El +51 ya está. Ejemplo: 987654321'
+                        : (!checkout.telefonoOk ? '9 dígitos, empieza con 9' : null),
                     border: const OutlineInputBorder(),
                   ),
                 ),

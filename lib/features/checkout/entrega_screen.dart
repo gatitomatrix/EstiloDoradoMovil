@@ -11,6 +11,7 @@ import '../../core/providers/product_provider.dart';
 import '../../core/services/ubigeo_service.dart';
 import '../../core/services/geocoding_service.dart';
 import '../../core/utils/tarifa_envio.dart';
+import '../../core/utils/input_formatters.dart';
 import '../../core/utils/agencias_shalom.dart';
 import '../../core/widgets/address_map_preview.dart';
 import 'interactive_map_screen.dart';
@@ -506,21 +507,21 @@ class _EntregaScreenState extends State<EntregaScreen> {
                 TextField(
                   controller: _telCtrl,
                   keyboardType: TextInputType.phone,
-                  maxLength: 9,
-                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  maxLength: 12,
+                  inputFormatters: [CelularCheckoutFormatter()],
                   decoration: InputDecoration(
                     labelText: checkout.mode == DeliveryMode.storePickup
                         ? 'Celular para recordarte el recojo'
                         : 'Celular de contacto',
                     prefixText: '+51 ',
-                    hintText: '9xxxxxxxx',
+                    hintText: '987654321',
                     counterText: '',
                     helperText: checkout.mode == DeliveryMode.storePickup
-                        ? 'Si pasa un día, te escribimos por WhatsApp'
-                        : 'Lo usará Shalom o el motorizado',
-                    errorText: !checkout.telefonoOk
-                        ? '9 dígitos, empieza con 9'
-                        : null,
+                        ? 'Solo 9 dígitos. No escribas +51 otra vez.'
+                        : 'Lo usará Shalom o el motorizado. No escribas +51.',
+                    errorText: _telCtrl.text.startsWith('51')
+                        ? 'Quita el 51. El +51 ya está. Ejemplo: 987654321'
+                        : (!checkout.telefonoOk ? '9 dígitos, empieza con 9' : null),
                     border: const OutlineInputBorder(),
                   ),
                 ),

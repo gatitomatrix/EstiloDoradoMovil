@@ -1,6 +1,23 @@
 // lib/core/utils/input_formatters.dart
 import 'package:flutter/services.dart';
 
+/// Celular de checkout: solo dígitos. Si pegan +51 9xxxxxxxx, deja los 9.
+class CelularCheckoutFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    var d = newValue.text.replaceAll(RegExp(r'[^0-9]'), '');
+    if (d.startsWith('51') && d.length > 9) d = d.substring(2);
+    if (d.length > 9) d = d.substring(0, 9);
+    return TextEditingValue(
+      text: d,
+      selection: TextSelection.collapsed(offset: d.length),
+    );
+  }
+}
+
 /// Solo dígitos 0-9.
 class DigitsOnlyFormatter extends TextInputFormatter {
   @override
