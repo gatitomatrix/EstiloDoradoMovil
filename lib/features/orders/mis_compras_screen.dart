@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/models/checkout_models.dart';
 import '../../core/utils/fecha_pe.dart';
 import '../../core/services/order_service.dart';
+import '../../core/utils/celular.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -360,9 +361,11 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
                                             const SizedBox(height: 8),
                                             Text('Pedido: ${_fmtDate(p.fechaPedido)}'),
                                             if (p.fechaEstado != null && p.fechaEstado!.isNotEmpty)
-                                              Text('${p.estado}: ${_fmtDate(p.fechaEstado)}'),
+                                              Text('${Celular.etiqueta(p.estado)}: ${_fmtDate(p.fechaEstado)}'),
                                             Text('Entrega: ${p.direccionEntrega ?? '—'}'),
-                                            Text('Pago: ${p.formaPago ?? '—'}'),
+                                            Text(
+                                              'Pago: ${(p.formaPago == null || p.formaPago!.trim().isEmpty) ? '—' : Celular.etiqueta(p.formaPago)}',
+                                            ),
                                             if (hasCpe && p.friendly != null)
                                               Text(
                                                 'Comprobante: ${p.friendly}',
@@ -472,7 +475,7 @@ class _MisComprasScreenState extends State<MisComprasScreen> {
     }
     return Chip(
       label: Text(
-        estado.toUpperCase(),
+        Celular.etiqueta(estado),
         style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.bold),
       ),
       backgroundColor: c,

@@ -5,6 +5,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../core/models/checkout_models.dart';
 import '../../../core/utils/tarifa_envio.dart';
 import '../../../core/utils/file_url.dart';
+import '../../../core/utils/celular.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -107,7 +108,7 @@ class OrderSuccessScreen extends StatelessWidget {
                   children: [
                     _row('Pedido', '#$pedidoId'),
                     _row('Total', 'S/ ${total.toStringAsFixed(2)}', highlight: true),
-                    _row('Pago', metodoPago.isEmpty ? '—' : metodoPago),
+                    _row('Pago', metodoPago.isEmpty ? '—' : Celular.etiqueta(metodoPago)),
                     if (_hasCpe)
                       _row(
                         'Comprobante',

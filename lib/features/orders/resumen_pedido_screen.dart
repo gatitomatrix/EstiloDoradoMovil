@@ -7,6 +7,7 @@ import '../../core/utils/file_url.dart';
 import '../../core/services/order_service.dart';
 import '../../core/utils/tarifa_envio.dart';
 import '../../core/utils/fecha_pe.dart';
+import '../../core/utils/celular.dart';
 
 const _gold = Color(0xFFD4AF37);
 
@@ -260,7 +261,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 Row(
                   children: [
                     Chip(
-                      label: Text(d.estado.toUpperCase()),
+                      label: Text(Celular.etiqueta(d.estado)),
                       backgroundColor: _estadoColor(d.estado).withValues(alpha: 0.15),
                       labelStyle: TextStyle(
                         color: _estadoColor(d.estado),
@@ -280,7 +281,7 @@ class _ResumenPedidoScreenState extends State<ResumenPedidoScreen> {
                 ),
                 const SizedBox(height: 8),
                 _info('Fecha', formatFechaHoraPe(d.fechaPedido)),
-                _info('Pago', d.formaPago.isEmpty ? '—' : d.formaPago),
+                _info('Pago', d.formaPago.isEmpty ? '—' : Celular.etiqueta(d.formaPago)),
                 _info('Entrega', d.direccionEntrega ?? '—'),
               ],
             ),
