@@ -797,7 +797,7 @@ class _PromoCinta extends StatelessWidget {
   }
 }
 
-/// Carrusel de portadas (7 s).
+/// Carrusel de portadas (7 s). La foto se ve completa. Al tocarla, se abre con zoom.
 class _HeroBanner extends StatefulWidget {
   const _HeroBanner();
 
@@ -811,16 +811,18 @@ class _HeroBannerState extends State<_HeroBanner> {
     'https://i.imgur.com/bG9AmNv.png',
     'https://i.imgur.com/9b8uchv.png',
   ];
+  static const _cream = Color(0xFFF6F1E8);
 
   final _page = PageController();
   Timer? _timer;
   int _i = 0;
+  bool _viewerOpen = false;
 
   @override
   void initState() {
     super.initState();
     _timer = Timer.periodic(const Duration(seconds: 7), (_) {
-      if (!mounted || !_page.hasClients) return;
+      if (!mounted || _viewerOpen || !_page.hasClients) return;
       _i = (_i + 1) % _urls.length;
       _page.animateToPage(
         _i,
@@ -837,32 +839,45 @@ class _HeroBannerState extends State<_HeroBanner> {
     super.dispose();
   }
 
+  Future<void> _openZoom(int i) async {
+    setState(() => _viewerOpen = true);
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (_) => _BannerZoom(url: _urls[i]),
+    );
+    if (mounted) setState(() => _viewerOpen = false);
+  }
+
   @override
   Widget build(BuildContext context) {
-    final h = MediaQuery.sizeOf(context).height;
-    final bannerH = (h * 0.30).clamp(168.0, 248.0);
-
-    return SizedBox(
-      height: bannerH,
-      width: double.infinity,
-      child: Stack(
-        fit: StackFit.expand,
+    return ColoredBox(
+      color: _cream,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          PageView.builder(
-            controller: _page,
-            itemCount: _urls.length,
-            onPageChanged: (i) => setState(() => _i = i),
-            itemBuilder: (_, i) => CachedNetworkImage(
-              imageUrl: _urls[i],
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(color: const Color(0xFF2D2418)),
-              errorWidget: (_, __, ___) => Container(color: const Color(0xFF2D2418)),
+          AspectRatio(
+            aspectRatio: 3,
+            child: PageView.builder(
+              controller: _page,
+              itemCount: _urls.length,
+              onPageChanged: (i) => setState(() => _i = i),
+              itemBuilder: (_, i) => GestureDetector(
+                onTap: () => _openZoom(i),
+                child: ColoredBox(
+                  color: _cream,
+                  child: CachedNetworkImage(
+                    imageUrl: _urls[i],
+                    fit: BoxFit.contain,
+                    placeholder: (_, __) => const ColoredBox(color: _cream),
+                    errorWidget: (_, __, ___) => const ColoredBox(color: Color(0xFF2D2418)),
+                  ),
+                ),
+              ),
             ),
           ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 10,
+          Padding(
+            padding: const EdgeInsets.only(top: 6, bottom: 8),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: List.generate(_urls.length, (i) {
@@ -872,7 +887,7 @@ class _HeroBannerState extends State<_HeroBanner> {
                   height: 8,
                   margin: const EdgeInsets.symmetric(horizontal: 3),
                   decoration: BoxDecoration(
-                    color: on ? const Color(0xFFD4AF37) : Colors.white70,
+                    color: on ? const Color(0xFFD4AF37) : const Color(0xFFD9CBB2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                 );
@@ -880,6 +895,103 @@ class _HeroBannerState extends State<_HeroBanner> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _BannerZoom extends StatefulWidget {
+  final String url;
+  const _BannerZoom({required this.url});
+
+  @override
+  State<_BannerZoom> createState() => _BannerZoomState();
+}
+
+class _BannerZoomState extends State<_BannerZoom> {
+  final _transform = TransformationController();
+  Offset _tap = Offset.zero;
+
+  @override
+  void dispose() {
+    _transform.dispose();
+    super.dispose();
+  }
+
+  void _toggleZoom() {
+    final zoomed = _transform.value.getMaxScaleOnAxis() > 1.05;
+    if (zoomed) {
+      _transform.value = Matrix4.identity();
+      return;
+    }
+    const s = 2.5;
+    _transform.value = Matrix4.identity()
+      ..translate(-_tap.dx * (s - 1), -_tap.dy * (s - 1))
+      ..scale(s);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.black,
+      child: SafeArea(
+        child: Stack(
+          children: [
+            Positioned.fill(
+              child: LayoutBuilder(
+                builder: (context, box) {
+                  return GestureDetector(
+                    onDoubleTapDown: (d) => _tap = d.localPosition,
+                    onDoubleTap: _toggleZoom,
+                    child: InteractiveViewer(
+                      transformationController: _transform,
+                      minScale: 1,
+                      maxScale: 4,
+                      child: SizedBox(
+                        width: box.maxWidth,
+                        height: box.maxHeight,
+                        child: CachedNetworkImage(
+                          imageUrl: widget.url,
+                          fit: BoxFit.contain,
+                          placeholder: (_, __) => const Center(
+                            child: CircularProgressIndicator(color: Color(0xFFD4AF37)),
+                          ),
+                          errorWidget: (_, __, ___) => const Icon(
+                            Icons.broken_image,
+                            color: Colors.white54,
+                            size: 48,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 8,
+              child: IconButton(
+                tooltip: 'Cerrar',
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.close, color: Colors.white),
+                style: IconButton.styleFrom(backgroundColor: Colors.black54),
+              ),
+            ),
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 16,
+              child: IgnorePointer(
+                child: Text(
+                  'Pellizca o toca dos veces para acercar',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
