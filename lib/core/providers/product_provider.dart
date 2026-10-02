@@ -67,6 +67,13 @@ class ProductProvider extends ChangeNotifier {
     if (precioMax != null) {
       list = list.where((p) => p.precioVenta <= precioMax!).toList();
     }
+    if (precioMin != null || precioMax != null) {
+      list.sort((a, b) {
+        final byPrice = a.precioVenta.compareTo(b.precioVenta);
+        if (byPrice != 0) return byPrice;
+        return a.nombre.toLowerCase().compareTo(b.nombre.toLowerCase());
+      });
+    }
     return list;
   }
 
