@@ -132,12 +132,12 @@ class _CartScreenState extends State<CartScreen> {
                       ),
                     ),
                   Text(
-                    'S/ ${item.precio.toStringAsFixed(2)}  ·  stock ${item.stockMax}',
+                    'S/ ${item.precio.toStringAsFixed(2)}',
                     style: TextStyle(color: Colors.grey[600], fontSize: 13),
                   ),
                   if (atMax)
                     Text(
-                      'Máximo disponible',
+                      'No hay más unidades disponibles',
                       style: TextStyle(color: Colors.orange[800], fontSize: 12, fontWeight: FontWeight.w600),
                     ),
                   const SizedBox(height: 4),
@@ -176,7 +176,7 @@ class _CartScreenState extends State<CartScreen> {
                       ? () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Solo hay ${item.stockMax} unidades de ${item.nombre}'),
+                              content: Text('No hay más unidades disponibles'),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: Colors.orange.shade800,
                             ),
@@ -187,7 +187,7 @@ class _CartScreenState extends State<CartScreen> {
                           if (!ok && context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Stock máximo: ${item.stockMax}'),
+                                content: Text('No hay más unidades disponibles'),
                                 behavior: SnackBarBehavior.floating,
                               ),
                             );

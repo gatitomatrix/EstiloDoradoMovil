@@ -433,7 +433,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
       CartAddResult.increased =>
         'Sumé ${pending.qty} más de ${pending.nombre}. Sigue en el carrito o paga cuando quieras.',
       CartAddResult.atLimit =>
-        'Llegaste al stock máximo de ${pending.nombre} (${pending.stock}).',
+        'No hay más unidades disponibles de ${pending.nombre}.',
       CartAddResult.outOfStock => '${pending.nombre} está agotado.',
     };
 
@@ -737,7 +737,7 @@ class _AssistantScreenState extends State<AssistantScreen> {
                           ? '$nombre\nProducto del pedido (referencia)'
                           : agotado
                               ? '$nombre\nAgotado'
-                              : '$nombre\nS/ ${precio is num ? precio.toStringAsFixed(2) : precio} · stock $stock',
+                              : '$nombre\nS/ ${precio is num ? precio.toStringAsFixed(2) : precio}',
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
                     ),
                   ),

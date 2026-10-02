@@ -103,11 +103,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         );
         return;
       case CartAddResult.increased:
-        msg = 'Cantidad actualizada (máx. ${product.stock})';
+        msg = 'Cantidad actualizada';
         AppSnackBar.ok(context, msg);
         return;
       case CartAddResult.atLimit:
-        AppSnackBar.warn(context, 'Solo hay ${product.stock} unidades disponibles');
+        AppSnackBar.warn(context, 'No hay más unidades disponibles');
         return;
       case CartAddResult.outOfStock:
         AppSnackBar.err(context, 'Producto agotado');
@@ -164,6 +164,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     final inCart = cartProvider.items.where((i) => i.id == product.id);
     final qtyInCart = inCart.isEmpty ? 0 : inCart.first.cantidad;
+    final agotado = product.stock < 1;
+    final alTope = !agotado && qtyInCart >= product.stock;
     final canAdd = product.stock > 0 && qtyInCart < product.stock;
 
     return Scaffold(
@@ -274,7 +276,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     ),
                     child: Text(
                       product.stock > 0
-                          ? 'En stock (${product.stock} disponibles)'
+                          ? 'Disponible'
                           : 'Agotado',
                       style: TextStyle(
                         color: product.stock > 0 ? Colors.green[800] : Colors.red[800],
@@ -292,7 +294,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                   if (qtyInCart > 0) ...[
                     const SizedBox(height: 8),
                     Text(
-                      'En tu carrito: $qtyInCart / ${product.stock}',
+                      'En tu carrito: $qtyInCart',
                       style: TextStyle(color: Colors.grey.shade700),
                     ),
                   ],
@@ -302,7 +304,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
                     child: ElevatedButton.icon(
                       onPressed: canAdd ? () => _addToCart(product, cartProvider) : null,
                       icon: const Icon(Icons.add_shopping_cart),
-                      label: Text(canAdd ? 'Agregar al carrito' : 'Sin stock disponible'),
+                      label: Text(
+                        agotado
+                            ? 'Agotado'
+                            : (alTope ? 'No hay más unidades' : 'Agregar al carrito'),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFFD4AF37),
                         foregroundColor: Colors.black87,

@@ -158,9 +158,9 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
           onAction: () => context.push('/cart'),
         );
       case CartAddResult.increased:
-        AppSnackBar.ok(context, 'Cantidad actualizada (máx. ${product.stock})');
+        AppSnackBar.ok(context, 'Cantidad actualizada');
       case CartAddResult.atLimit:
-        AppSnackBar.warn(context, 'Solo hay ${product.stock} unidades disponibles');
+        AppSnackBar.warn(context, 'No hay más unidades disponibles');
       case CartAddResult.outOfStock:
         AppSnackBar.err(context, 'Producto agotado');
     }
@@ -614,7 +614,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                       children: [
                         Expanded(
                           child: Text(
-                            product.stock > 0 ? 'Stock ${product.stock}' : 'Agotado',
+                            product.stock > 0 ? 'Disponible' : 'Agotado',
                             style: TextStyle(
                               fontSize: 12,
                               color: product.stock > 0 ? Colors.green.shade800 : Colors.red.shade700,
