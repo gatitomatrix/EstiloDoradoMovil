@@ -18,6 +18,7 @@ class CheckoutProvider extends ChangeNotifier {
   bool pendingEditAddress = false;
   String telefono = '';
   int? telefonoUserId;
+  int _telGen = 0;
 
   double totalWith(double subtotal) => subtotal + fee - discount;
 
@@ -56,6 +57,7 @@ class CheckoutProvider extends ChangeNotifier {
   }
 
   Future<void> hydrate() async {
+    final gen = _telGen;
     try {
       final p = await SharedPreferences.getInstance();
       final raw = p.getString(_k);
@@ -75,9 +77,11 @@ class CheckoutProvider extends ChangeNotifier {
       }
       fee = (j['fee'] as num?)?.toDouble() ?? 0;
       discount = (j['discount'] as num?)?.toDouble() ?? 0;
-      telefono = Celular.cliente(j['telefono']?.toString());
-      final uid = j['telefonoUserId'];
-      telefonoUserId = uid is int ? uid : int.tryParse('${uid ?? ''}');
+      if (gen == _telGen) {
+        telefono = Celular.cliente(j['telefono']?.toString());
+        final uid = j['telefonoUserId'];
+        telefonoUserId = uid is int ? uid : int.tryParse('${uid ?? ''}');
+      }
       notifyListeners();
     } catch (_) {}
   }
@@ -121,6 +125,7 @@ class CheckoutProvider extends ChangeNotifier {
   }
 
   void setTelefono(String raw) {
+    _telGen++;
     var d = raw.replaceAll(RegExp(r'\D'), '');
     if (d.startsWith('51') && d.length >= 11) d = d.substring(2);
     if (d.length > 9) d = d.substring(0, 9);
@@ -131,16 +136,19 @@ class CheckoutProvider extends ChangeNotifier {
   }
 
   void bindCliente(int? userId, String? profileTel) {
+    _telGen++;
     final profile = Celular.cliente(profileTel);
-    if (userId == null || telefonoUserId != userId) {
-      telefono = profile;
-      telefonoUserId = userId;
+    final actual = Celular.cliente(telefono);
+    final mismo = userId != null && telefonoUserId == userId;
+    if (actual.isNotEmpty && (mismo || telefonoUserId == null)) {
+      telefono = actual;
+      if (userId != null) telefonoUserId = userId;
       notifyListeners();
       _persist();
       return;
     }
-    final actual = Celular.cliente(telefono);
-    telefono = actual.isNotEmpty ? actual : profile;
+    telefono = profile;
+    telefonoUserId = userId;
     notifyListeners();
     _persist();
   }

@@ -542,6 +542,7 @@ class _EntregaScreenState extends State<EntregaScreen> {
                     ? 'Ir a pagar'
                     : 'Elegir lugar de envío',
                 onPressed: () {
+                  checkout.setTelefono(_telCtrl.text);
                   if (checkout.mode == DeliveryMode.storePickup) {
                     if (!checkout.telefonoOk) {
                       ScaffoldMessenger.of(context).showSnackBar(

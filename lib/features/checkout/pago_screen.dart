@@ -213,13 +213,13 @@ class _PagoScreenState extends State<PagoScreen> {
     if (_submitting) return;
     final checkout = context.read<CheckoutProvider>();
     final cart = context.read<CartProvider>();
+    checkout.setTelefono(_telPago.text);
     if (!checkout.canCash) {
       _toast('El pago en efectivo solo está disponible para retiro en tienda.');
       return;
     }
     if (!checkout.telefonoOk) {
       _toast('Indica un celular de 9 dígitos para recordarte el recojo.');
-      context.go('/entrega');
       return;
     }
     if (cart.items.isEmpty) {
@@ -261,6 +261,7 @@ class _PagoScreenState extends State<PagoScreen> {
     final checkout = context.read<CheckoutProvider>();
     final cart = context.read<CartProvider>();
     final pay = context.read<PaymentProvider>();
+    checkout.setTelefono(_telPago.text);
 
     if (cart.items.isEmpty) {
       _toast('Tu carrito está vacío.');
