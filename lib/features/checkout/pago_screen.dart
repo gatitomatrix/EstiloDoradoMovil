@@ -57,6 +57,7 @@ class _PagoScreenState extends State<PagoScreen> {
   String? _method; // yape | tarjeta | efectivo
   bool _otroCorreo = false;
   late final TextEditingController _correoPago;
+  final _telPago = TextEditingController();
 
   @override
   void initState() {
@@ -65,6 +66,10 @@ class _PagoScreenState extends State<PagoScreen> {
     pay.clearAll();
     final email = context.read<AuthProvider>().user?['email']?.toString() ?? '';
     _correoPago = TextEditingController(text: email);
+    _telPago.addListener(() {
+      if (!mounted) return;
+      context.read<CheckoutProvider>().setTelefono(_telPago.text);
+    });
     _ubigeo.getDepartamentos().then((d) {
       if (mounted) setState(() => _deps = d);
     });
@@ -76,6 +81,8 @@ class _PagoScreenState extends State<PagoScreen> {
             uid is int ? uid : int.tryParse('${uid ?? ''}'),
             auth.user?['telefono']?.toString(),
           );
+      final tel = context.read<CheckoutProvider>().telefono;
+      if (_telPago.text != tel) _telPago.text = tel;
       final pp = context.read<ProductProvider>();
       pp.loadProducts().then((_) {
         if (!mounted) return;
@@ -98,6 +105,7 @@ class _PagoScreenState extends State<PagoScreen> {
     _facRazon.dispose();
     _facDir.dispose();
     _correoPago.dispose();
+    _telPago.dispose();
     super.dispose();
   }
 
@@ -258,7 +266,10 @@ class _PagoScreenState extends State<PagoScreen> {
       _toast('Tu carrito está vacío.');
       return;
     }
-
+    if (!checkout.telefonoOk) {
+      _toast('Indica un celular de 9 dígitos, empieza con 9.');
+      return;
+    }
     if (!checkout.canPay) {
       _toast('Elige retiro en tienda o completa el lugar de envío.');
       context.go('/entrega');
@@ -660,12 +671,17 @@ class _PagoScreenState extends State<PagoScreen> {
     final total = checkout.totalWith(subtotal);
 
     if (!checkout.canPay && !_submitting && !_leavingToSuccess) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted || _submitting || _leavingToSuccess) return;
-        if (!context.read<CheckoutProvider>().canPay) {
-          context.go('/entrega');
-        }
-      });
+      final entregaLista = checkout.mode == DeliveryMode.storePickup ||
+          (checkout.mode == DeliveryMode.express && checkout.envioListo);
+      if (!entregaLista) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted || _submitting || _leavingToSuccess) return;
+          final c = context.read<CheckoutProvider>();
+          final lista = c.mode == DeliveryMode.storePickup ||
+              (c.mode == DeliveryMode.express && c.envioListo);
+          if (!lista) context.go('/entrega');
+        });
+      }
     }
 
     return Scaffold(
@@ -872,6 +888,27 @@ class _PagoScreenState extends State<PagoScreen> {
                   _sumRow('Entregas', checkout.fee),
                   const Divider(),
                   _sumRow('Total', total, bold: true),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _telPago,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 12,
+                    inputFormatters: [CelularCheckoutFormatter()],
+                    decoration: InputDecoration(
+                      labelText: 'Celular de contacto',
+                      prefixText: '+51 ',
+                      hintText: '987654321',
+                      counterText: '',
+                      helperText: '9 dígitos, empieza con 9. No escribas +51 otra vez.',
+                      errorText: _telPago.text.isEmpty
+                          ? null
+                          : (_telPago.text.startsWith('51')
+                              ? 'Quita el 51. El +51 ya está.'
+                              : (!checkout.telefonoOk ? '9 dígitos, empieza con 9' : null)),
+                      border: const OutlineInputBorder(),
+                      isDense: true,
+                    ),
+                  ),
                   const SizedBox(height: 12),
                   Align(
                     alignment: Alignment.centerLeft,
