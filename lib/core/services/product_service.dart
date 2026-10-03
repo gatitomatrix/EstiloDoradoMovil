@@ -1,4 +1,6 @@
 // lib/core/services/product_service.dart
+import 'package:dio/dio.dart';
+
 import '../config/api_config.dart';
 import '../models/product_model.dart';
 import 'api_service.dart';
@@ -7,6 +9,27 @@ class ProductService {
   final ApiService _api = ApiService();
 
   Future<List<Product>> getAllProducts({String? search}) async {
+    try {
+      return await _readProducts(search);
+    } catch (e) {
+      if (!_puedeReintentar(e)) rethrow;
+      await Future<void>.delayed(const Duration(milliseconds: 600));
+      return _readProducts(search);
+    }
+  }
+
+  bool _puedeReintentar(Object e) {
+    if (e is! DioException) return true;
+    final code = e.response?.statusCode;
+    if (code != null && code < 500) return false;
+    return e.type == DioExceptionType.connectionTimeout ||
+        e.type == DioExceptionType.receiveTimeout ||
+        e.type == DioExceptionType.sendTimeout ||
+        e.type == DioExceptionType.connectionError ||
+        (code != null && code >= 500);
+  }
+
+  Future<List<Product>> _readProducts(String? search) async {
     final response = await _api.get(
       ApiConfig.productos,
       queryParameters: search != null && search.isNotEmpty ? {'q': search} : null,

@@ -400,7 +400,7 @@ class _HomeScreenState extends State<HomeScreen> with RouteAware {
                         const Icon(Icons.wifi_off, size: 48, color: Colors.grey),
                         const SizedBox(height: 12),
                         Text(
-                          'No se pudieron cargar productos.\nRevisa Laravel en local.',
+                          'No se pudieron cargar los productos.\nRevisa tu internet y vuelve a intentar.',
                           textAlign: TextAlign.center,
                           style: TextStyle(color: Colors.grey.shade700),
                         ),
