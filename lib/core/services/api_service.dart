@@ -36,24 +36,32 @@ class ApiService {
     ),
   );
 
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   ApiService() {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          final token = await _storage.read(key: 'auth_token');
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
-          }
+          try {
+            final token = await _storage
+                .read(key: 'auth_token')
+                .timeout(const Duration(seconds: 3));
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
+          } catch (_) {}
           handler.next(options);
         },
         onError: (error, handler) async {
           final status = error.response?.statusCode;
 
           if (status == 401) {
-            await _storage.delete(key: 'auth_token');
-            await _storage.delete(key: 'user');
+            try {
+              await _storage.delete(key: 'auth_token').timeout(const Duration(seconds: 3));
+              await _storage.delete(key: 'user').timeout(const Duration(seconds: 3));
+            } catch (_) {}
             handler.reject(
               DioException(
                 requestOptions: error.requestOptions,

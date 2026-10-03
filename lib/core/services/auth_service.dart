@@ -8,7 +8,9 @@ import 'api_service.dart';
 
 class AuthService {
   final ApiService _api = ApiService();
-  final FlutterSecureStorage _storage = const FlutterSecureStorage();
+  final FlutterSecureStorage _storage = const FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
   static String errorMessage(Object e) {
     if (e is DioException) {

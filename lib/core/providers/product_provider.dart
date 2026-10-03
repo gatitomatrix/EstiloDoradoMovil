@@ -99,7 +99,7 @@ class ProductProvider extends ChangeNotifier {
     notifyListeners();
 
     try {
-      final list = await _service.getAllProducts();
+      final list = await _service.getAllProducts().timeout(const Duration(seconds: 50));
       if (gen != _loadGen) return;
       _all = list;
       _loaded = true;
