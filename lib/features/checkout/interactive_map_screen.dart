@@ -77,6 +77,9 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
     setState(() {
       _reverseLoading = true;
       _center = p;
+      _viaRev = null;
+      _numRev = null;
+      _hint = null;
     });
     final rev = await _geo.reverseAddress(p.latitude, p.longitude);
     if (!mounted || gen != _revGen) return;
@@ -88,8 +91,12 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
         final display = (rev['display'] ?? '').trim();
         if (via.isNotEmpty) _viaRev = via;
         if (num.isNotEmpty) _numRev = num;
-        final coordOnly = RegExp(r'^ubicaci[oó]n\s+-?\d', caseSensitive: false).hasMatch(display)
-            || RegExp(r'^-?\d+(\.\d+)?\s*,\s*-?\d').hasMatch(display);
+        final coordOnly =
+            RegExp(
+              r'^ubicaci[oó]n\s+-?\d',
+              caseSensitive: false,
+            ).hasMatch(display) ||
+            RegExp(r'^-?\d+(\.\d+)?\s*,\s*-?\d').hasMatch(display);
         if (display.isNotEmpty && !coordOnly) {
           _hint = display;
         } else if ((_viaRev ?? '').isNotEmpty) {
@@ -100,7 +107,17 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
   }
 
   void _onMoveEnd(LatLng c) {
+    if (_ignoreMove) return;
     _moveDebounce?.cancel();
+    // Invalidate the previous lookup before waiting for the map to settle.
+    ++_revGen;
+    setState(() {
+      _center = c;
+      _reverseLoading = true;
+      _viaRev = null;
+      _numRev = null;
+      _hint = null;
+    });
     _moveDebounce = Timer(const Duration(milliseconds: 350), () {
       if (!mounted || _ignoreMove) return;
       _reverse(c);
@@ -111,18 +128,30 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
     final q = _searchCtrl.text.trim();
     if (q.length < 3) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Escribe al menos 3 caracteres para buscar')),
+        const SnackBar(
+          content: Text('Escribe al menos 3 caracteres para buscar'),
+        ),
       );
       return;
     }
     setState(() => _searching = true);
-    final query = q.contains('Perú') || q.toLowerCase().contains('peru') ? q : '$q, Perú';
-    final res = await _geo.searchAddress(query, lat: _center.latitude, lon: _center.longitude);
+    final query = q.contains('Perú') || q.toLowerCase().contains('peru')
+        ? q
+        : '$q, Perú';
+    final res = await _geo.searchAddress(
+      query,
+      lat: _center.latitude,
+      lon: _center.longitude,
+    );
     if (!mounted) return;
     setState(() => _searching = false);
     if (res == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('No se encontró esa dirección. Prueba con más detalle.')),
+        const SnackBar(
+          content: Text(
+            'No se encontró esa dirección. Prueba con más detalle.',
+          ),
+        ),
       );
       return;
     }
@@ -134,10 +163,15 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
   }
 
   void _confirm() {
+    if (_searching || _reverseLoading) return;
     LatLng p = _center;
     try {
       p = _mapCtrl.camera.center;
     } catch (_) {}
+    if (p.latitude != _center.latitude || p.longitude != _center.longitude) {
+      _onMoveEnd(p);
+      return;
+    }
     Navigator.of(context).pop(
       InteractiveMapResult(
         lat: p.latitude,
@@ -233,8 +267,10 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                   ),
                   children: [
                     TileLayer(
-                      urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                      userAgentPackageName: 'com.estilodorado.app_movil_estilo_dorado',
+                      urlTemplate:
+                          'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                      userAgentPackageName:
+                          'com.estilodorado.app_movil_estilo_dorado',
                       maxZoom: 19,
                     ),
                   ],
@@ -243,7 +279,11 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                   child: Center(
                     child: Padding(
                       padding: EdgeInsets.only(bottom: 36),
-                      child: Icon(Icons.location_on, color: Colors.red, size: 52),
+                      child: Icon(
+                        Icons.location_on,
+                        color: Colors.red,
+                        size: 52,
+                      ),
                     ),
                   ),
                 ),
@@ -253,11 +293,17 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                   child: Column(
                     children: [
                       _zoomBtn(Icons.add, () {
-                        _mapCtrl.move(_mapCtrl.camera.center, _mapCtrl.camera.zoom + 1);
+                        _mapCtrl.move(
+                          _mapCtrl.camera.center,
+                          _mapCtrl.camera.zoom + 1,
+                        );
                       }),
                       const SizedBox(height: 8),
                       _zoomBtn(Icons.remove, () {
-                        _mapCtrl.move(_mapCtrl.camera.center, _mapCtrl.camera.zoom - 1);
+                        _mapCtrl.move(
+                          _mapCtrl.camera.center,
+                          _mapCtrl.camera.zoom - 1,
+                        );
                       }),
                     ],
                   ),
@@ -293,7 +339,9 @@ class _InteractiveMapScreenState extends State<InteractiveMapScreen> {
                     SizedBox(
                       height: 50,
                       child: ElevatedButton.icon(
-                        onPressed: _confirm,
+                        onPressed: _searching || _reverseLoading
+                            ? null
+                            : _confirm,
                         icon: const Icon(Icons.check),
                         label: const Text(
                           'Usar esta ubicación',

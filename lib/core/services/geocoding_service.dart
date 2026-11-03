@@ -4,12 +4,20 @@ import 'api_service.dart';
 import '../config/api_config.dart';
 
 class GeocodingService {
-  final ApiService _api = ApiService();
-  final Dio _osm = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 8),
-    receiveTimeout: const Duration(seconds: 8),
-    headers: {'Accept': 'application/json'},
-  ));
+  final ApiService _api;
+  final Dio _osm;
+
+  GeocodingService({ApiService? api, Dio? osm})
+    : _api = api ?? ApiService(),
+      _osm =
+          osm ??
+          Dio(
+            BaseOptions(
+              connectTimeout: const Duration(seconds: 8),
+              receiveTimeout: const Duration(seconds: 8),
+              headers: {'Accept': 'application/json'},
+            ),
+          );
 
   Future<({double lat, double lon})?> searchAddress(
     String query, {
@@ -22,10 +30,7 @@ class GeocodingService {
         qp['lat'] = lat.toString();
         qp['lon'] = lon.toString();
       }
-      final res = await _api.get(
-        ApiConfig.geoSearch,
-        queryParameters: qp,
-      );
+      final res = await _api.get(ApiConfig.geoSearch, queryParameters: qp);
       final data = res.data;
       if (data is List && data.isNotEmpty) {
         final first = data.first;
@@ -50,27 +55,32 @@ class GeocodingService {
         if (_usable(mapped)) return mapped;
       }
     } catch (_) {}
-    return _reverseNominatim(lat, lon) ?? await _reversePhoton(lat, lon);
+    final nominatim = await _reverseNominatim(lat, lon);
+    return nominatim ?? await _reversePhoton(lat, lon);
   }
 
   bool _usable(Map<String, String>? r) {
     if (r == null) return false;
     final via = (r['via'] ?? '').trim();
     final display = (r['display'] ?? '').trim();
-    if (RegExp(r'^ubicaci[oó]n\s+-?\d', caseSensitive: false).hasMatch(display)) {
+    if (RegExp(
+      r'^ubicaci[oó]n\s+-?\d',
+      caseSensitive: false,
+    ).hasMatch(display)) {
       return false;
     }
-    return via.length > 1 || (display.length > 3 && !RegExp(r'^-?\d').hasMatch(display));
+    return via.length > 1 ||
+        (display.length > 3 && !RegExp(r'^-?\d').hasMatch(display));
   }
 
   Map<String, String> _mapHit(Map<String, dynamic> m) => {
-        'via': m['via']?.toString() ?? '',
-        'numero': m['numero']?.toString() ?? '',
-        'distrito': m['distrito']?.toString() ?? '',
-        'provincia': m['provincia']?.toString() ?? '',
-        'departamento': m['departamento']?.toString() ?? '',
-        'display': m['display']?.toString() ?? '',
-      };
+    'via': m['via']?.toString() ?? '',
+    'numero': m['numero']?.toString() ?? '',
+    'distrito': m['distrito']?.toString() ?? '',
+    'provincia': m['provincia']?.toString() ?? '',
+    'departamento': m['departamento']?.toString() ?? '',
+    'display': m['display']?.toString() ?? '',
+  };
 
   Future<({double lat, double lon})?> _searchNominatim(String query) async {
     try {
@@ -109,15 +119,33 @@ class GeocodingService {
       );
       final j = res.data;
       if (j is! Map) return null;
-      final a = j['address'] is Map ? Map<String, dynamic>.from(j['address'] as Map) : <String, dynamic>{};
-      final via = (a['road'] ?? a['pedestrian'] ?? a['residential'] ?? a['footway'] ?? j['name'] ?? '').toString().trim();
+      final a = j['address'] is Map
+          ? Map<String, dynamic>.from(j['address'] as Map)
+          : <String, dynamic>{};
+      final via =
+          (a['road'] ??
+                  a['pedestrian'] ??
+                  a['residential'] ??
+                  a['footway'] ??
+                  j['name'] ??
+                  '')
+              .toString()
+              .trim();
       final numero = (a['house_number'] ?? '').toString().trim();
       final display = (j['display_name'] ?? '').toString().trim();
       final hit = {
         'via': via,
         'numero': numero,
-        'distrito': (a['city_district'] ?? a['suburb'] ?? a['town'] ?? a['village'] ?? a['city'] ?? '').toString(),
-        'provincia': (a['province'] ?? a['county'] ?? a['city'] ?? '').toString(),
+        'distrito':
+            (a['city_district'] ??
+                    a['suburb'] ??
+                    a['town'] ??
+                    a['village'] ??
+                    a['city'] ??
+                    '')
+                .toString(),
+        'provincia': (a['province'] ?? a['county'] ?? a['city'] ?? '')
+            .toString(),
         'departamento': (a['state'] ?? a['region'] ?? '').toString(),
         'display': display,
       };
@@ -148,7 +176,8 @@ class GeocodingService {
       final hit = {
         'via': via,
         'numero': numero,
-        'distrito': (p['district'] ?? p['locality'] ?? p['city'] ?? '').toString(),
+        'distrito': (p['district'] ?? p['locality'] ?? p['city'] ?? '')
+            .toString(),
         'provincia': (p['city'] ?? p['county'] ?? '').toString(),
         'departamento': (p['state'] ?? '').toString(),
         'display': display,
